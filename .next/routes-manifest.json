@@ -31,12 +31,76 @@
       "namedRegex": "^/api/auth/(?<nxtPnextauth>.+?)(?:/)?$"
     },
     {
+      "page": "/api/v1/folios/[id]/items",
+      "regex": "^/api/v1/folios/([^/]+?)/items(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/api/v1/folios/(?<nxtPid>[^/]+?)/items(?:/)?$"
+    },
+    {
       "page": "/api/v1/folios/[id]/payments",
       "regex": "^/api/v1/folios/([^/]+?)/payments(?:/)?$",
       "routeKeys": {
         "nxtPid": "nxtPid"
       },
       "namedRegex": "^/api/v1/folios/(?<nxtPid>[^/]+?)/payments(?:/)?$"
+    },
+    {
+      "page": "/api/v1/housekeeping/tasks/[id]",
+      "regex": "^/api/v1/housekeeping/tasks/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/api/v1/housekeeping/tasks/(?<nxtPid>[^/]+?)(?:/)?$"
+    },
+    {
+      "page": "/api/v1/maintenance/tickets/[id]",
+      "regex": "^/api/v1/maintenance/tickets/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/api/v1/maintenance/tickets/(?<nxtPid>[^/]+?)(?:/)?$"
+    },
+    {
+      "page": "/api/v1/payments/[id]/refund",
+      "regex": "^/api/v1/payments/([^/]+?)/refund(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/api/v1/payments/(?<nxtPid>[^/]+?)/refund(?:/)?$"
+    },
+    {
+      "page": "/api/v1/payments/[id]/void",
+      "regex": "^/api/v1/payments/([^/]+?)/void(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/api/v1/payments/(?<nxtPid>[^/]+?)/void(?:/)?$"
+    },
+    {
+      "page": "/api/v1/reservations/[id]",
+      "regex": "^/api/v1/reservations/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/api/v1/reservations/(?<nxtPid>[^/]+?)(?:/)?$"
+    },
+    {
+      "page": "/api/v1/reservations/[id]/assign-room",
+      "regex": "^/api/v1/reservations/([^/]+?)/assign\\-room(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/api/v1/reservations/(?<nxtPid>[^/]+?)/assign\\-room(?:/)?$"
+    },
+    {
+      "page": "/api/v1/reservations/[id]/cancel",
+      "regex": "^/api/v1/reservations/([^/]+?)/cancel(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/api/v1/reservations/(?<nxtPid>[^/]+?)/cancel(?:/)?$"
     },
     {
       "page": "/api/v1/reservations/[id]/check-in",
@@ -55,6 +119,14 @@
       "namedRegex": "^/api/v1/reservations/(?<nxtPid>[^/]+?)/check\\-out(?:/)?$"
     },
     {
+      "page": "/api/v1/reservations/[id]/no-show",
+      "regex": "^/api/v1/reservations/([^/]+?)/no\\-show(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/api/v1/reservations/(?<nxtPid>[^/]+?)/no\\-show(?:/)?$"
+    },
+    {
       "page": "/api/v1/room-types/[id]",
       "regex": "^/api/v1/room\\-types/([^/]+?)(?:/)?$",
       "routeKeys": {
@@ -69,6 +141,46 @@
         "nxtPid": "nxtPid"
       },
       "namedRegex": "^/api/v1/rooms/(?<nxtPid>[^/]+?)(?:/)?$"
+    },
+    {
+      "page": "/api/v1/users/[id]",
+      "regex": "^/api/v1/users/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/api/v1/users/(?<nxtPid>[^/]+?)(?:/)?$"
+    },
+    {
+      "page": "/api/v1/users/[id]/reset-password",
+      "regex": "^/api/v1/users/([^/]+?)/reset\\-password(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/api/v1/users/(?<nxtPid>[^/]+?)/reset\\-password(?:/)?$"
+    },
+    {
+      "page": "/front-desk/[id]",
+      "regex": "^/front\\-desk/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/front\\-desk/(?<nxtPid>[^/]+?)(?:/)?$"
+    },
+    {
+      "page": "/receipts/[id]",
+      "regex": "^/receipts/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/receipts/(?<nxtPid>[^/]+?)(?:/)?$"
+    },
+    {
+      "page": "/reservations/[id]",
+      "regex": "^/reservations/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/reservations/(?<nxtPid>[^/]+?)(?:/)?$"
     },
     {
       "page": "/[section]",
@@ -99,10 +211,34 @@
       "namedRegex": "^/_not\\-found(?:/)?$"
     },
     {
+      "page": "/account",
+      "regex": "^/account(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/account(?:/)?$"
+    },
+    {
+      "page": "/api/v1/account/password",
+      "regex": "^/api/v1/account/password(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/v1/account/password(?:/)?$"
+    },
+    {
       "page": "/api/v1/availability",
       "regex": "^/api/v1/availability(?:/)?$",
       "routeKeys": {},
       "namedRegex": "^/api/v1/availability(?:/)?$"
+    },
+    {
+      "page": "/api/v1/guests",
+      "regex": "^/api/v1/guests(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/v1/guests(?:/)?$"
+    },
+    {
+      "page": "/api/v1/maintenance/tickets",
+      "regex": "^/api/v1/maintenance/tickets(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/v1/maintenance/tickets(?:/)?$"
     },
     {
       "page": "/api/v1/reservations",
@@ -123,10 +259,46 @@
       "namedRegex": "^/api/v1/rooms(?:/)?$"
     },
     {
+      "page": "/api/v1/users",
+      "regex": "^/api/v1/users(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/v1/users(?:/)?$"
+    },
+    {
+      "page": "/calendar",
+      "regex": "^/calendar(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/calendar(?:/)?$"
+    },
+    {
+      "page": "/front-desk",
+      "regex": "^/front\\-desk(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/front\\-desk(?:/)?$"
+    },
+    {
+      "page": "/housekeeping",
+      "regex": "^/housekeeping(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/housekeeping(?:/)?$"
+    },
+    {
       "page": "/login",
       "regex": "^/login(?:/)?$",
       "routeKeys": {},
       "namedRegex": "^/login(?:/)?$"
+    },
+    {
+      "page": "/maintenance",
+      "regex": "^/maintenance(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/maintenance(?:/)?$"
+    },
+    {
+      "page": "/payments",
+      "regex": "^/payments(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/payments(?:/)?$"
     },
     {
       "page": "/reservations",
@@ -135,10 +307,22 @@
       "namedRegex": "^/reservations(?:/)?$"
     },
     {
+      "page": "/reservations/new",
+      "regex": "^/reservations/new(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/reservations/new(?:/)?$"
+    },
+    {
       "page": "/rooms",
       "regex": "^/rooms(?:/)?$",
       "routeKeys": {},
       "namedRegex": "^/rooms(?:/)?$"
+    },
+    {
+      "page": "/settings",
+      "regex": "^/settings(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/settings(?:/)?$"
     }
   ],
   "dataRoutes": [],

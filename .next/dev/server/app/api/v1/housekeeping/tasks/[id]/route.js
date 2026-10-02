@@ -1,0 +1,11 @@
+var R=require("../../../../../../chunks/[turbopack]_runtime.js")("server/app/api/v1/housekeeping/tasks/[id]/route.js")
+R.c("server/chunks/node_modules_next_1g48-qv._.js")
+R.c("server/chunks/node_modules_next-auth_07a7ldt._.js")
+R.c("server/chunks/node_modules_openid-client_0ayas6_._.js")
+R.c("server/chunks/node_modules_jose_dist_node_cjs_1j9cyjs._.js")
+R.c("server/chunks/node_modules_zod_v3_0e38wp9._.js")
+R.c("server/chunks/[root-of-the-server]__0o6o_90._.js")
+R.c("server/chunks/[root-of-the-server]__1ecn9ae._.js")
+R.c("server/chunks/_next-internal_server_app_api_v1_housekeeping_tasks_[id]_route_actions_1f-y5zp.js")
+R.m("[project]/node_modules/next/dist/esm/build/templates/app-route.js { INNER_APP_ROUTE => \"[project]/src/app/api/v1/housekeeping/tasks/[id]/route.ts [app-route] (ecmascript)\" } [app-route] (ecmascript)")
+module.exports=R.m("[project]/node_modules/next/dist/esm/build/templates/app-route.js { INNER_APP_ROUTE => \"[project]/src/app/api/v1/housekeeping/tasks/[id]/route.ts [app-route] (ecmascript)\" } [app-route] (ecmascript)").exports

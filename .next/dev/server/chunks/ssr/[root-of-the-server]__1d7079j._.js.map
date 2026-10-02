@@ -1,0 +1,6 @@
+{
+  "version": 3,
+  "sources": [],
+  "sections": [
+    {"offset": {"line": 10, "column": 0}, "map": {"version":3,"sources":["file:///C:/Users/renie/Downloads/bayfront-pms/bayfront-pms/src/app/(app)/[section]/page.tsx"],"sourcesContent":["export default async function NotBuilt(props: { params: Promise<{ section: string }> }) {\r\n  const { section } = await props.params;\r\n  const name = section.replace(/-/g, \" \").replace(/^\\w/, c => c.toUpperCase());\r\n  return (<div className=\"mx-auto mt-16 max-w-md rounded-xl border border-dashed border-slate-300 bg-white p-8 text-center\">\r\n    <h1 className=\"text-xl font-semibold\">{name}</h1>\r\n    <p className=\"mt-2 text-sm text-slate-500\">This part of the system hasn't been built yet. Use the Dashboard, Reservations or Rooms for now.</p></div>);\r\n}"],"names":["NotBuilt","props","section","params","name","replace","c","toUpperCase","className"],"mappings":";;;;;;AAAe,eAAeA,SAASC,KAA+C;IACpF,MAAM,EAAEC,OAAO,EAAE,GAAG,MAAMD,MAAME,MAAM;IACtC,MAAMC,OAAOF,QAAQG,OAAO,CAAC,MAAM,KAAKA,OAAO,CAAC,OAAOC,CAAAA,IAAKA,EAAEC,WAAW;IACzE,qBAAQ,8OAAC;QAAIC,WAAU;;0BACrB,8OAAC;gBAAGA,WAAU;0BAAyBJ;;;;;;0BACvC,8OAAC;gBAAEI,WAAU;0BAA8B;;;;;;;;;;;;AAC/C"}}]
+}

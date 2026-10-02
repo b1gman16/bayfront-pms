@@ -1,17 +1,18 @@
-# Ignore dependency folders (very common)
+# dependencies and build output
 node_modules/
-vendor/
+.next/
+out/
+*.tsbuildinfo
+next-env.d.ts
 
-# Ignore environment variables / sensitive data (NEVER push these to GitHub)
+# secrets and local settings: NEVER commit these
 .env
 .env.local
-secrets.json
+.env.*.local
 
-# Ignore operating system specific files
+# logs, backups, OS files
+*.log
+*.sql.gz
+*.zip
 .DS_Store
 Thumbs.db
-
-# Ignore build outputs or log files
-/dist
-/build
-*.log

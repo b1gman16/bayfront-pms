@@ -1,0 +1,6 @@
+{
+  "version": 3,
+  "sources": [],
+  "sections": [
+    {"offset": {"line": 16, "column": 0}, "map": {"version":3,"sources":["file:///C:/Users/renie/Downloads/bayfront-pms/bayfront-pms/src/middleware.ts"],"sourcesContent":["import { withAuth } from \"next-auth/middleware\";\n\n// Pages require login; /api routes check the session themselves.\nexport default withAuth({ pages: { signIn: \"/login\" } });\nexport const config = { matcher: [\"/((?!login|api|_next|favicon).*)\"] };"],"names":["pages","signIn","config","matcher"],"mappings":";;;;;;AAAA;;uCAGe,IAAA,8JAAQ,EAAC;IAAEA,OAAO;QAAEC,QAAQ;IAAS;AAAE;AAC/C,MAAMC,SAAS;IAAEC,SAAS;QAAC;KAAmC;AAAC"}}]
+}

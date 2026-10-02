@@ -1,0 +1,11 @@
+var R=require("../../../../chunks/[turbopack]_runtime.js")("server/app/api/v1/reservations/route.js")
+R.c("server/chunks/node_modules_next_0dtzpt7._.js")
+R.c("server/chunks/node_modules_next-auth_07a7ldt._.js")
+R.c("server/chunks/node_modules_openid-client_0ayas6_._.js")
+R.c("server/chunks/node_modules_jose_dist_node_cjs_1j9cyjs._.js")
+R.c("server/chunks/node_modules_zod_v3_0e38wp9._.js")
+R.c("server/chunks/[root-of-the-server]__0o6o_90._.js")
+R.c("server/chunks/[root-of-the-server]__15t33s-._.js")
+R.c("server/chunks/_next-internal_server_app_api_v1_reservations_route_actions_0axj4on.js")
+R.m("[project]/node_modules/next/dist/esm/build/templates/app-route.js { INNER_APP_ROUTE => \"[project]/src/app/api/v1/reservations/route.ts [app-route] (ecmascript)\" } [app-route] (ecmascript)")
+module.exports=R.m("[project]/node_modules/next/dist/esm/build/templates/app-route.js { INNER_APP_ROUTE => \"[project]/src/app/api/v1/reservations/route.ts [app-route] (ecmascript)\" } [app-route] (ecmascript)").exports

@@ -1,13 +1,14 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, CalendarDays, ArrowLeftRight, BedDouble, Users, CreditCard, Sparkles, Wrench, BarChart3, Settings } from "lucide-react";
+import { LayoutDashboard, CalendarDays, CalendarRange, ArrowLeftRight, BedDouble, Users, CreditCard, Sparkles, Wrench, BarChart3, Settings } from "lucide-react";
 import Logo from "./Logo";
 import { can, Role } from "@/server/domain/permissions";
 
 const NAV = [
   { label: "Dashboard", href: "/", icon: LayoutDashboard, perm: "room.view" },
   { label: "Reservations", href: "/reservations", icon: CalendarDays, perm: "reservation.view" },
+  { label: "Calendar", href: "/calendar", icon: CalendarRange, perm: "reservation.view" },
   { label: "Check-in / Check-out", href: "/front-desk", icon: ArrowLeftRight, perm: "checkin" },
   { label: "Rooms", href: "/rooms", icon: BedDouble, perm: "room.view" },
   { label: "Guests", href: "/guests", icon: Users, perm: "guest.view" },

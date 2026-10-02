@@ -1,4 +1,5 @@
 "use client";
+import Link from "next/link";
 import { signOut } from "next-auth/react";
 import { Search, LogOut } from "lucide-react";
 import ConnectionBanner from "./ConnectionBanner";
@@ -14,9 +15,11 @@ export default function Topbar({ name, role }: { name: string; role: string }) {
     <div className="ml-auto flex items-center gap-4">
       <ConnectionBanner />
       <div className="flex items-center gap-3">
-        <div className="flex h-9 w-9 items-center justify-center rounded-full bg-navy-800 text-xs font-semibold text-white">{initials}</div>
-        <div className="hidden text-sm leading-tight sm:block"><div className="font-medium">{name}</div>
-          <div className="text-xs text-slate-500">{role.replace("_", " ").toLowerCase().replace(/^\w|\s\w/g, c => c.toUpperCase())}</div></div>
+        <Link href="/account" title="My account and password" className="flex items-center gap-3 rounded-md p-1 hover:bg-slate-50">
+          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-navy-800 text-xs font-semibold text-white">{initials}</div>
+          <div className="hidden text-sm leading-tight sm:block"><div className="font-medium">{name}</div>
+            <div className="text-xs text-slate-500">{role.replace("_", " ").toLowerCase().replace(/^\w|\s\w/g, c => c.toUpperCase())}</div></div>
+        </Link>
         <button onClick={() => signOut({ callbackUrl: "/login" })} title="Sign out" aria-label="Sign out"
           className="rounded p-2 text-slate-500 hover:bg-slate-100"><LogOut size={17} /></button>
       </div>
