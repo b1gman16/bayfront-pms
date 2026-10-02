@@ -1,0 +1,19 @@
+{
+  "/(app)/[section]/page": "/[section]",
+  "/(app)/page": "/",
+  "/(app)/reservations/page": "/reservations",
+  "/(app)/rooms/page": "/rooms",
+  "/_global-error/page": "/_global-error",
+  "/_not-found/page": "/_not-found",
+  "/api/auth/[...nextauth]/route": "/api/auth/[...nextauth]",
+  "/api/v1/availability/route": "/api/v1/availability",
+  "/api/v1/folios/[id]/payments/route": "/api/v1/folios/[id]/payments",
+  "/api/v1/reservations/[id]/check-in/route": "/api/v1/reservations/[id]/check-in",
+  "/api/v1/reservations/[id]/check-out/route": "/api/v1/reservations/[id]/check-out",
+  "/api/v1/reservations/route": "/api/v1/reservations",
+  "/api/v1/room-types/[id]/route": "/api/v1/room-types/[id]",
+  "/api/v1/room-types/route": "/api/v1/room-types",
+  "/api/v1/rooms/[id]/route": "/api/v1/rooms/[id]",
+  "/api/v1/rooms/route": "/api/v1/rooms",
+  "/login/page": "/login"
+}

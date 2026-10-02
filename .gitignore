@@ -1,0 +1,17 @@
+# Ignore dependency folders (very common)
+node_modules/
+vendor/
+
+# Ignore environment variables / sensitive data (NEVER push these to GitHub)
+.env
+.env.local
+secrets.json
+
+# Ignore operating system specific files
+.DS_Store
+Thumbs.db
+
+# Ignore build outputs or log files
+/dist
+/build
+*.log

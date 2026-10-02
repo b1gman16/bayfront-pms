@@ -1,0 +1,19 @@
+{
+  "/(app)/[section]/page": "app/(app)/[section]/page.js",
+  "/(app)/page": "app/(app)/page.js",
+  "/(app)/reservations/page": "app/(app)/reservations/page.js",
+  "/(app)/rooms/page": "app/(app)/rooms/page.js",
+  "/_global-error/page": "app/_global-error/page.js",
+  "/_not-found/page": "app/_not-found/page.js",
+  "/api/auth/[...nextauth]/route": "app/api/auth/[...nextauth]/route.js",
+  "/api/v1/availability/route": "app/api/v1/availability/route.js",
+  "/api/v1/folios/[id]/payments/route": "app/api/v1/folios/[id]/payments/route.js",
+  "/api/v1/reservations/[id]/check-in/route": "app/api/v1/reservations/[id]/check-in/route.js",
+  "/api/v1/reservations/[id]/check-out/route": "app/api/v1/reservations/[id]/check-out/route.js",
+  "/api/v1/reservations/route": "app/api/v1/reservations/route.js",
+  "/api/v1/room-types/[id]/route": "app/api/v1/room-types/[id]/route.js",
+  "/api/v1/room-types/route": "app/api/v1/room-types/route.js",
+  "/api/v1/rooms/[id]/route": "app/api/v1/rooms/[id]/route.js",
+  "/api/v1/rooms/route": "app/api/v1/rooms/route.js",
+  "/login/page": "app/login/page.js"
+}

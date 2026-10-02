@@ -1,0 +1,162 @@
+{
+  "version": 3,
+  "pages404": true,
+  "appType": "app",
+  "caseSensitive": false,
+  "basePath": "",
+  "redirects": [
+    {
+      "source": "/:path+/",
+      "destination": "/:path+",
+      "internal": true,
+      "priority": true,
+      "statusCode": 308,
+      "regex": "^(?:/((?:[^/]+?)(?:/(?:[^/]+?))*))/$"
+    }
+  ],
+  "headers": [],
+  "onMatchHeaders": [],
+  "rewrites": {
+    "beforeFiles": [],
+    "afterFiles": [],
+    "fallback": []
+  },
+  "dynamicRoutes": [
+    {
+      "page": "/api/auth/[...nextauth]",
+      "regex": "^/api/auth/(.+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPnextauth": "nxtPnextauth"
+      },
+      "namedRegex": "^/api/auth/(?<nxtPnextauth>.+?)(?:/)?$"
+    },
+    {
+      "page": "/api/v1/folios/[id]/payments",
+      "regex": "^/api/v1/folios/([^/]+?)/payments(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/api/v1/folios/(?<nxtPid>[^/]+?)/payments(?:/)?$"
+    },
+    {
+      "page": "/api/v1/reservations/[id]/check-in",
+      "regex": "^/api/v1/reservations/([^/]+?)/check\\-in(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/api/v1/reservations/(?<nxtPid>[^/]+?)/check\\-in(?:/)?$"
+    },
+    {
+      "page": "/api/v1/reservations/[id]/check-out",
+      "regex": "^/api/v1/reservations/([^/]+?)/check\\-out(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/api/v1/reservations/(?<nxtPid>[^/]+?)/check\\-out(?:/)?$"
+    },
+    {
+      "page": "/api/v1/room-types/[id]",
+      "regex": "^/api/v1/room\\-types/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/api/v1/room\\-types/(?<nxtPid>[^/]+?)(?:/)?$"
+    },
+    {
+      "page": "/api/v1/rooms/[id]",
+      "regex": "^/api/v1/rooms/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/api/v1/rooms/(?<nxtPid>[^/]+?)(?:/)?$"
+    },
+    {
+      "page": "/[section]",
+      "regex": "^/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPsection": "nxtPsection"
+      },
+      "namedRegex": "^/(?<nxtPsection>[^/]+?)(?:/)?$"
+    }
+  ],
+  "staticRoutes": [
+    {
+      "page": "/",
+      "regex": "^/(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/(?:/)?$"
+    },
+    {
+      "page": "/_global-error",
+      "regex": "^/_global\\-error(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/_global\\-error(?:/)?$"
+    },
+    {
+      "page": "/_not-found",
+      "regex": "^/_not\\-found(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/_not\\-found(?:/)?$"
+    },
+    {
+      "page": "/api/v1/availability",
+      "regex": "^/api/v1/availability(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/v1/availability(?:/)?$"
+    },
+    {
+      "page": "/api/v1/reservations",
+      "regex": "^/api/v1/reservations(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/v1/reservations(?:/)?$"
+    },
+    {
+      "page": "/api/v1/room-types",
+      "regex": "^/api/v1/room\\-types(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/v1/room\\-types(?:/)?$"
+    },
+    {
+      "page": "/api/v1/rooms",
+      "regex": "^/api/v1/rooms(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/v1/rooms(?:/)?$"
+    },
+    {
+      "page": "/login",
+      "regex": "^/login(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/login(?:/)?$"
+    },
+    {
+      "page": "/reservations",
+      "regex": "^/reservations(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/reservations(?:/)?$"
+    },
+    {
+      "page": "/rooms",
+      "regex": "^/rooms(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/rooms(?:/)?$"
+    }
+  ],
+  "dataRoutes": [],
+  "rsc": {
+    "header": "rsc",
+    "varyHeader": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch",
+    "prefetchHeader": "next-router-prefetch",
+    "didPostponeHeader": "x-nextjs-postponed",
+    "contentTypeHeader": "text/x-component",
+    "suffix": ".rsc",
+    "prefetchSegmentHeader": "next-router-segment-prefetch",
+    "prefetchSegmentSuffix": ".segment.rsc",
+    "prefetchSegmentDirSuffix": ".segments",
+    "clientParamParsing": false,
+    "dynamicRSCPrerender": false
+  },
+  "rewriteHeaders": {
+    "pathHeader": "x-nextjs-rewritten-path",
+    "queryHeader": "x-nextjs-rewritten-query"
+  }
+}
