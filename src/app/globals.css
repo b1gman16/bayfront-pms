@@ -1,0 +1,21 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Keyboard focus: always visible */
+:focus-visible { outline: 2px solid #1f55d6; outline-offset: 2px; }
+
+/* Respect "reduce motion" settings */
+@media (prefers-reduced-motion: reduce) {
+  *, ::before, ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Touch screens: comfortable tap targets */
+@media (pointer: coarse) {
+  button, select, textarea, input:not([type="checkbox"]):not([type="radio"]) { min-height: 44px; }
+}
