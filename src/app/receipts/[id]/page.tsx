@@ -4,7 +4,7 @@ import Link from "next/link";
 import { prisma } from "@/server/db";
 import { authOptions } from "@/server/auth";
 import { can } from "@/server/domain/permissions";
-import { computeFolio, formatPHP } from "@/server/domain/folio";
+import { computeFolio, formatPHP, rulesForFolio } from "@/server/domain/folio";
 import { getResort } from "@/server/services/settings";
 import { PrintButton } from "@/components/BillActions";
 export const dynamic = "force-dynamic";
@@ -13,14 +13,17 @@ const dt = (d: Date) => d.toLocaleDateString("en-PH", { month: "short", day: "nu
 
 export default async function Receipt(props: { params: Promise<{ id: string }> }) {
   const { id } = await props.params;
-  const user = (await getServerSession(authOptions))?.user as any;
-  if (!user) redirect("/login");
+  const s = (await getServerSession(authOptions))?.user as any;
+  if (!s) redirect("/login");
+  const user = await prisma.user.findUnique({ where: { id: s.id }, select: { role: true, active: true, mustChangePassword: true } });
+  if (!user || !user.active || user.mustChangePassword) redirect("/login");
   if (!can(user.role, "payment.view")) notFound();
 
   const p = await prisma.payment.findUnique({ where: { id }, include: { folio: { include: { items: true, payments: true, reservation: { include: { guest: true, room: true } } } } } });
   if (!p) notFound();
-  const [rules, receiver, resort] = await Promise.all([prisma.feeRule.findMany(), prisma.user.findUnique({ where: { id: p.receivedById } }), getResort()]);
+  const [live, receiver, resort] = await Promise.all([prisma.feeRule.findMany(), prisma.user.findUnique({ where: { id: p.receivedById } }), getResort()]);
   const res = p.folio.reservation;
+  const rules = rulesForFolio(p.folio.rulesSnapshot, live);   // a closed bill keeps the rules it was closed with
   const t = computeFolio(p.folio.items.map(i => ({ qty: i.qty, unitAmount: i.unitAmount, voided: !!i.voidedAt })), rules, p.folio.payments);
   const refund = p.kind === "REFUND";
   const row = (l: string, v: string, bold = false) => <div className={`flex justify-between py-1 ${bold ? "border-t border-slate-300 pt-2 font-semibold" : ""}`}><span>{l}</span><span>{v}</span></div>;

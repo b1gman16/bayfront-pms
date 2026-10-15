@@ -24,7 +24,7 @@ export async function createUser(raw: unknown, actor: Actor) {
   const passwordHash = await argon2.hash(pw);
   try {
     const u = await prisma.$transaction(async tx => {
-      const u = await tx.user.create({ data: { name: d.name, email: d.email, role: d.role, passwordHash } });
+      const u = await tx.user.create({ data: { name: d.name, email: d.email, role: d.role, passwordHash, mustChangePassword: true } });
       await audit(tx, actor.id, "user.create", "User", u.id, `${actor.name} created the ${LABEL[d.role]} account for ${d.name} (${d.email})`);
       return u;
     });
@@ -65,7 +65,7 @@ export async function resetPassword(id: string, actor: Actor) {
   await prisma.$transaction(async tx => {
     const t = await tx.user.findUniqueOrThrow({ where: { id } });
     guardOwner(actor, t.role);
-    await tx.user.update({ where: { id }, data: { passwordHash } });
+    await tx.user.update({ where: { id }, data: { passwordHash, mustChangePassword: true } });
     await audit(tx, actor.id, "user.password_reset", "User", id, `${actor.name} reset the password for ${t.name}`);
   });
   return { tempPassword: pw };
@@ -80,7 +80,7 @@ export async function changeOwnPassword(raw: unknown, actor: Actor) {
   if (d.next === d.current) throw new AppError("Choose a different password than the current one", 400);
   const passwordHash = await argon2.hash(d.next);
   await prisma.$transaction(async tx => {
-    await tx.user.update({ where: { id: actor.id }, data: { passwordHash } });
+    await tx.user.update({ where: { id: actor.id }, data: { passwordHash, mustChangePassword: false } });
     await audit(tx, actor.id, "user.password_change", "User", actor.id, `${actor.name} changed their own password`);
   });
   return { ok: true };

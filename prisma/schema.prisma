@@ -67,6 +67,7 @@ model User {
   passwordHash String
   role Role
   active Boolean @default(true)
+  mustChangePassword Boolean @default(false)
   lastLogin DateTime?
   createdAt DateTime @default(now())
 }
@@ -151,6 +152,7 @@ model Folio {
   reservation Reservation @relation(fields: [reservationId], references: [id])
   closedAt DateTime?
   closedById String?
+  rulesSnapshot Json?
   items FolioItem[]
   payments Payment[]
 }

@@ -1,9 +1,10 @@
 import { z } from "zod";
+import type { Prisma } from "@prisma/client";
 import { prisma } from "../db";
 import { audit } from "../audit";
 import { AppError, Actor } from "../http";
 import { isRoomFree, nightsBetween } from "../domain/availability";
-import { computeFolio, formatPHP } from "../domain/folio";
+import { computeFolio, formatPHP, rulesForFolio, snapshotRules } from "../domain/folio";
 import { can } from "../domain/permissions";
 
 const day = (s: string) => new Date(s + "T00:00:00.000Z");
@@ -61,21 +62,28 @@ export async function checkIn(id: string, version: number, override: boolean, ac
   });
 }
 
+/** Bill totals. A closed bill uses the rules saved on it; an open bill uses today's rules. */
 export async function getFolioTotals(folioId: string) {
   const f = await prisma.folio.findUniqueOrThrow({ where: { id: folioId }, include: { items: true, payments: true } });
-  const rules = await prisma.feeRule.findMany();
-  return { folio: f, totals: computeFolio(f.items.map(i => ({ ...i, voided: !!i.voidedAt })), rules, f.payments) };
+  const live = await prisma.feeRule.findMany();
+  const rules = rulesForFolio(f.rulesSnapshot, live);
+  return { folio: f, totals: computeFolio(f.items.map(i => ({ ...i, voided: !!i.voidedAt })), rules, f.payments), frozen: Array.isArray(f.rulesSnapshot) };
 }
 
 export async function checkOut(id: string, override: boolean, actor: Actor) {
   const r = await prisma.reservation.findUniqueOrThrow({ where: { id }, include: { folio: true, room: true } });
   if (r.status !== "CHECKED_IN" || !r.folio || !r.room) throw new AppError("Only checked-in guests can be checked out");
-  const { totals } = await getFolioTotals(r.folio.id);
-  if (totals.balance > 0 && !(override && can(actor.role, "checkout.override")))
-    throw new AppError(`Unpaid balance ${formatPHP(totals.balance)}. Settle payment first.`, 409, totals);
   return prisma.$transaction(async tx => {
+    // Work out the bill, check the balance, and close it all in one step, so a payment can't slip in between.
+    const f = await tx.folio.findUniqueOrThrow({ where: { id: r.folio!.id }, include: { items: true, payments: true } });
+    if (f.closedAt) throw new AppError("This bill is already closed");
+    const live = await tx.feeRule.findMany();
+    const totals = computeFolio(f.items.map(i => ({ ...i, voided: !!i.voidedAt })), live, f.payments);
+    if (totals.balance > 0 && !(override && can(actor.role, "checkout.override")))
+      throw new AppError(`Unpaid balance ${formatPHP(totals.balance)}. Settle payment first.`, 409, totals);
     await tx.reservation.update({ where: { id }, data: { status: "CHECKED_OUT", checkedOutAt: new Date(), checkedOutById: actor.id, version: { increment: 1 } } });
-    await tx.folio.update({ where: { id: r.folio!.id }, data: { closedAt: new Date(), closedById: actor.id } });
+    await tx.folio.update({ where: { id: f.id }, data: { closedAt: new Date(), closedById: actor.id,
+      rulesSnapshot: snapshotRules(live) as unknown as Prisma.InputJsonValue } });   // the rules are fixed on this bill from now on
     await tx.room.update({ where: { id: r.room!.id }, data: { status: "DIRTY" } });
     await tx.housekeepingTask.create({ data: { roomId: r.room!.id, status: "DIRTY" } });
     await audit(tx, actor.id, "checkout", "Reservation", id, `${actor.name} checked out ${r.code}; balance ${formatPHP(totals.balance)}`, undefined, totals);

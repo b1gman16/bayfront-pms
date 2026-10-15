@@ -45,7 +45,7 @@ export function TicketActions({ id, status, assignedToId, staff, canManage, isAs
   const isOpen = ["OPEN", "ASSIGNED", "IN_PROGRESS"].includes(status); const mayWork = canManage || isAssignee;
   async function act(action: string, extra: object = {}) {
     setBusy(true); setErr(""); const r = await call(`/api/v1/maintenance/tickets/${id}`, "PATCH", { action, ...extra }); setBusy(false);
-    if (r.ok) { setFixing(false); router.refresh(); } else setErr(r.error);
+    if (r.ok) { if (r.data?.warning) alert(r.data.warning); setFixing(false); router.refresh(); } else setErr(r.error);
   }
   const small = "rounded-md border border-slate-300 px-3 py-1.5 text-sm hover:bg-slate-50 disabled:opacity-50";
   return (<div className="space-y-2">

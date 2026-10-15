@@ -1,5 +1,5 @@
 import { prisma } from "../db";
-import { computeFolio } from "../domain/folio";
+import { computeFolio, rulesForFolio } from "../domain/folio";
 import { nightsBetween } from "../domain/availability";
 
 export type Cell = string | number | null;
@@ -115,7 +115,7 @@ const R: Record<string, (c: Ctx) => Promise<Report>> = {
       prisma.folio.findMany({ where: { reservation: { status: { in: ["CHECKED_IN", "CHECKED_OUT"] } } }, include: { items: true, payments: true, reservation: { include: { guest: true, room: true } } } }),
       prisma.feeRule.findMany(),
     ]);
-    const list = folios.map(f => ({ f, t: computeFolio(f.items.map(i => ({ qty: i.qty, unitAmount: i.unitAmount, voided: !!i.voidedAt })), rules, f.payments) }))
+    const list = folios.map(f => ({ f, t: computeFolio(f.items.map(i => ({ qty: i.qty, unitAmount: i.unitAmount, voided: !!i.voidedAt })), rulesForFolio(f.rulesSnapshot, rules), f.payments) }))
       .filter(x => x.t.balance > 0).sort((a, b) => b.t.balance - a.t.balance);
     const total = sum(list.map(x => x.t.balance));
     return {

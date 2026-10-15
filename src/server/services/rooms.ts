@@ -1,8 +1,11 @@
 import { z } from "zod";
+import type { TaskStatus } from "@prisma/client";
 import { prisma } from "../db";
 import { audit } from "../audit";
 import { AppError, Actor } from "../http";
 import { formatPHP } from "../domain/folio";
+
+const OPEN_TASK: TaskStatus[] = ["DIRTY", "CLEANING"];
 
 const typeSchema = z.object({
   name: z.string().trim().min(2).max(60),
@@ -63,7 +66,8 @@ export async function createRoom(raw: unknown, actor: Actor) {
   try {
     return await prisma.$transaction(async tx => {
       const r = await tx.room.create({ data: { number: d.number, roomTypeId: d.roomTypeId, floor: d.floor || null, maxOccupancy: d.maxOccupancy, amenities: d.amenities, notes: d.notes || null, status: d.status ?? "CLEAN" } });
-      await audit(tx, actor.id, "room.create", "Room", r.id, `${actor.name} added Room ${r.number}`, undefined, r);
+      if (r.status === "DIRTY") await tx.housekeepingTask.create({ data: { roomId: r.id, status: "DIRTY", notes: `Added as dirty by ${actor.name}` } });
+      await audit(tx, actor.id, "room.create", "Room", r.id, `${actor.name} added Room ${r.number}${r.status === "DIRTY" ? " (cleaning task created)" : ""}`, undefined, r);
       return { room: r };
     });
   } catch (e) { dup(e, `Room number ${d.number} already exists`); }
@@ -86,9 +90,27 @@ export async function updateRoom(id: string, raw: unknown, actor: Actor) {
       const r = await tx.room.update({ where: { id }, data: {
         number: d.number, roomTypeId: d.roomTypeId, floor: d.floor || null, maxOccupancy: d.maxOccupancy,
         amenities: d.amenities, notes: d.notes || null, ...(d.status ? { status: d.status } : {}) } });
+
       const parts: string[] = [];
       if (before.number !== r.number) parts.push(`renumbered from ${before.number}`);
-      if (before.status !== r.status) parts.push(`status ${lbl(before.status)} → ${lbl(r.status)}`);
+      if (before.status !== r.status) {
+        parts.push(`status ${lbl(before.status)} → ${lbl(r.status)}`);
+        // Keep the housekeeping board in step with the room's status.
+        if (r.status === "DIRTY") {
+          const open = await tx.housekeepingTask.findFirst({ where: { roomId: id, status: { in: OPEN_TASK } } });
+          if (!open) {
+            await tx.housekeepingTask.create({ data: { roomId: id, status: "DIRTY", notes: `Set to dirty by ${actor.name}` } });
+            parts.push("cleaning task created");
+          } else if (open.status === "CLEANING") {
+            await tx.housekeepingTask.update({ where: { id: open.id }, data: { status: "DIRTY", startedAt: null } });
+            parts.push("cleaning task reset to 'to clean'");
+          }
+        } else {
+          const closed = await tx.housekeepingTask.updateMany({ where: { roomId: id, status: { in: OPEN_TASK } },
+            data: { status: "DONE", completedAt: new Date(), notes: `Closed: room set to ${lbl(r.status)} by ${actor.name}` } });
+          if (closed.count > 0) parts.push("open cleaning task closed");
+        }
+      }
       if (before.roomTypeId !== r.roomTypeId) parts.push("room type changed");
       await audit(tx, actor.id, "room.update", "Room", id, `${actor.name} updated Room ${r.number}${parts.length ? ": " + parts.join(", ") : ""}`, before, r);
       return { room: r, warning };

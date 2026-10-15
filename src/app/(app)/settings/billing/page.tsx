@@ -26,8 +26,8 @@ export default async function BillingSettings() {
       <p className="text-sm text-slate-500">How the total on every guest bill is worked out.</p></div><RuleButton nextOrder={nextOrder} /></div>
 
     <p className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
-      <b>Before you change a rate:</b> a change also applies to existing bills and receipts, including guests who already checked out, because bills are always worked out from the current rules.
-      Make changes when no one is checking out, and keep a note of the old rate for your records.</p>
+      <b>When a change applies:</b> a change takes effect on bills that are still open, meaning guests who are checked in now.
+      A bill's rules are fixed at check-out, so receipts and reports for guests who already checked out don't change.</p>
 
     <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
       <table className="w-full text-sm"><thead className="bg-slate-50 text-left text-xs text-slate-500"><tr>

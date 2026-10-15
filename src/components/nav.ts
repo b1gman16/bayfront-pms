@@ -1,7 +1,7 @@
 import { LayoutDashboard, CalendarDays, CalendarRange, ArrowLeftRight, BedDouble, Users, CreditCard, Sparkles, Wrench, BarChart3, ScrollText, Settings } from "lucide-react";
 
 export const NAV = [
-  { label: "Dashboard", href: "/", icon: LayoutDashboard, perm: "room.view" },
+  { label: "Dashboard", href: "/", icon: LayoutDashboard, perm: "reservation.view" },
   { label: "Reservations", href: "/reservations", icon: CalendarDays, perm: "reservation.view" },
   { label: "Calendar", href: "/calendar", icon: CalendarRange, perm: "reservation.view" },
   { label: "Check-in / Check-out", href: "/front-desk", icon: ArrowLeftRight, perm: "checkin" },

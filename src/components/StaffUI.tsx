@@ -85,7 +85,7 @@ export function ChangePassword() {
     e.preventDefault(); const form = e.currentTarget; const f = new FormData(form); setMsg(""); setErr("");
     if (f.get("next") !== f.get("again")) { setErr("The new passwords don't match."); return; }
     setBusy(true); const r = await call("/api/v1/account/password", "POST", { current: f.get("current"), next: f.get("next") }); setBusy(false);
-    if (r.ok) { setMsg("Password changed."); form.reset(); } else setErr(r.error);
+    if (r.ok) { setMsg("Password changed. Taking you to the dashboard…"); form.reset(); setTimeout(() => { window.location.href = "/"; }, 900); } else setErr(r.error);
   }
   return (<form onSubmit={submit} className="max-w-sm space-y-3 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
     <h2 className="font-semibold">Change password</h2>

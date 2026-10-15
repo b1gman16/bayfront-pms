@@ -105,7 +105,19 @@ export async function updateTicket(id: string, raw: unknown, actor: Actor) {
         summary += `. Room ${t.room.number} sent to housekeeping`;
       }
     }
+    // Reopened ticket: block the room again so it can't be booked while the problem exists.
+    let warning: string | undefined;
+    if (d.action === "REOPEN" && t.room && !["MAINTENANCE", "OUT_OF_ORDER"].includes(t.room.status)) {
+      if (t.room.status === "OCCUPIED") {
+        warning = `Room ${t.room.number} has a guest in it, so it was not blocked. Block it after the guest checks out.`;
+      } else {
+        await tx.room.update({ where: { id: t.room.id }, data: { status: "MAINTENANCE" } });
+        await tx.housekeepingTask.updateMany({ where: { roomId: t.room.id, status: { in: ["DIRTY", "CLEANING"] } },
+          data: { status: "DONE", completedAt: new Date(), notes: "Closed: room taken out of service" } });
+        summary += `. Room ${t.room.number} blocked again`;
+      }
+    }
     await audit(tx, actor.id, `maintenance.${d.action.toLowerCase()}`, "MaintenanceTicket", id, summary);
-    return { ok: true };
+    return { ok: true, warning };
   });
 }

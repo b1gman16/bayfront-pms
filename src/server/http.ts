@@ -10,16 +10,23 @@ export class AppError extends Error {
 }
 export type Actor = { id: string; name: string; role: Role };
 
-/** Every endpoint: authenticate -> check account is still active -> authorize -> run -> uniform errors.
+/** Every endpoint: refuse cross-site writes -> authenticate -> check the account is active -> authorize -> run -> uniform errors.
  *  permission "" means "any signed-in user". A handler may return a Response (e.g. a CSV file) or any JSON value. */
 export function api(permission: string, fn: (req: Request, actor: Actor, ctx: any) => Promise<unknown>) {
   return async (req: Request, ctx: any) => {
     try {
+      // Cross-site request protection: a write must come from this same site.
+      const origin = req.headers.get("origin"), host = req.headers.get("host");
+      if (!["GET", "HEAD"].includes(req.method) && origin && host && new URL(origin).host !== host)
+        return NextResponse.json({ error: "Request blocked" }, { status: 403 });
+
       const s = (await getServerSession(authOptions))?.user as any;
       if (!s) return NextResponse.json({ error: "Not signed in" }, { status: 401 });
       // Role and active status come from the database, not the login token, so changes apply immediately.
-      const u = await prisma.user.findUnique({ where: { id: s.id }, select: { id: true, name: true, role: true, active: true } });
+      const u = await prisma.user.findUnique({ where: { id: s.id }, select: { id: true, name: true, role: true, active: true, mustChangePassword: true } });
       if (!u || !u.active) return NextResponse.json({ error: "This account is disabled" }, { status: 401 });
+      if (u.mustChangePassword && new URL(req.url).pathname !== "/api/v1/account/password")
+        return NextResponse.json({ error: "Change your password first (My account)" }, { status: 403 });
       if (permission && !can(u.role as Role, permission)) return NextResponse.json({ error: "Not allowed" }, { status: 403 });
       const params = ctx?.params ? await ctx.params : {};   // Next 14 gives an object, Next 15+ a Promise
       const out = await fn(req, { id: u.id, name: u.name, role: u.role as Role }, { ...ctx, params });
