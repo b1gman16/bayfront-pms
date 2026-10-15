@@ -46,7 +46,9 @@ export default async function Receipt(props: { params: Promise<{ id: string }> }
         {refund && p.notes && row("Reason", p.notes)}
         <div className="mt-2 flex justify-between border-t border-slate-300 pt-2 text-lg font-semibold"><span>{refund ? "Amount refunded" : "Amount received"}</span><span>{refund ? "-" : ""}{formatPHP(p.amount)}</span></div></section>
       <section><div className="mb-1 font-medium">Account summary</div>
-        {row("Total charges", formatPHP(t.total))}{row("Total paid", formatPHP(t.paid - t.refunded))}{row("Balance", formatPHP(t.balance), true)}</section>
+        {["PENDING", "CONFIRMED"].includes(res.status) || (res.status === "CANCELLED" && p.folio.items.length === 0)
+          ? <>{row("Deposits held", formatPHP(t.paid - t.refunded))}<div className="pt-1 text-xs text-slate-500">Applied to your bill at check-in.</div></>
+          : <>{row("Total charges", formatPHP(t.total))}{row("Total paid", formatPHP(t.paid - t.refunded))}{row("Balance", formatPHP(t.balance), true)}</>}</section>
       <footer className="border-t border-slate-200 pt-3 text-center text-xs text-slate-500">Received by {receiver?.name ?? "staff"}.<br />{resort.footer || `Thank you for staying at ${resort.name}.`}</footer>
     </div></div>);
 }

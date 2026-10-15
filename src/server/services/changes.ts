@@ -3,7 +3,8 @@ import { prisma } from "../db";
 import { audit } from "../audit";
 import { AppError, Actor } from "../http";
 import { isRoomFree, nightsBetween } from "../domain/availability";
-import { formatPHP } from "../domain/folio";
+import { computeFolio, formatPHP, snapshotRules } from "../domain/folio";
+import type { Prisma } from "@prisma/client";
 
 const day = (s: string) => new Date(s + "T00:00:00.000Z");
 const manilaToday = () => day(new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Manila" }));
@@ -89,13 +90,19 @@ const cancelSchema = z.object({ version: z.number().int(), reason: z.string().tr
 export async function cancelReservation(id: string, raw: unknown, actor: Actor) {
   const d = cancelSchema.parse(raw);
   return prisma.$transaction(async tx => {
-    const r = await tx.reservation.findUniqueOrThrow({ where: { id }, include: { folio: { include: { payments: true } } } });
+    const r = await tx.reservation.findUniqueOrThrow({ where: { id }, include: { folio: { include: { payments: true, items: true } } } });
     if (!["PENDING", "CONFIRMED"].includes(r.status)) throw new AppError("Only upcoming reservations can be cancelled. Check out in-house guests instead.");
+    const live = await tx.feeRule.findMany();
     const net = (r.folio?.payments ?? []).reduce((s, p) => s + (p.kind === "PAYMENT" ? p.amount : -p.amount), 0);
-    if (net > 0) throw new AppError(`${formatPHP(net)} has been paid on this reservation. Refund it first, then cancel.`);
-    const upd = await tx.reservation.updateMany({ where: { id, version: d.version },
-      data: { status: "CANCELLED", cancelReason: d.reason, version: { increment: 1 } } });
+    if (net > 0) {
+      // Money the resort keeps must be a charge on the bill (a cancellation fee). Everything else must be refunded first.
+      const kept = computeFolio((r.folio?.items ?? []).map(i => ({ qty: i.qty, unitAmount: i.unitAmount, voided: !!i.voidedAt })), live, []).total;
+      if (net > kept) throw new AppError(`${formatPHP(net - kept)} of the money paid is not accounted for. Refund it, or add a cancellation fee for the amount the resort keeps, then cancel.`);
+    }
+    const upd = await tx.reservation.updateMany({ where: { id, version: d.version }, data: { status: "CANCELLED", cancelReason: d.reason, version: { increment: 1 } } });
     if (upd.count === 0) throw new AppError(CHANGED);
+    if (r.folio) await tx.folio.update({ where: { id: r.folio.id }, data: { closedAt: new Date(), closedById: actor.id,
+      rulesSnapshot: snapshotRules(live) as unknown as Prisma.InputJsonValue } });   // nothing can be added to a cancelled reservation's bill
     await audit(tx, actor.id, "reservation.cancel", "Reservation", id, `${actor.name} cancelled ${r.code}: ${d.reason}`);
     return { ok: true };
   });
