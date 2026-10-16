@@ -5,9 +5,10 @@ import { prisma } from "@/server/db";
 import { authOptions } from "@/server/auth";
 import { can } from "@/server/domain/permissions";
 import { computeFolio, formatPHP } from "@/server/domain/folio";
-import { nightsBetween } from "@/server/domain/availability";
+import { isRoomFree, nightsBetween } from "@/server/domain/availability";
 import { getFolioTotals } from "@/server/services/reservations";
 import FolioActions from "@/components/FolioActions";
+import MoveRoom, { RoomOption } from "@/components/MoveRoom";
 import { RefundButton, VoidButton } from "@/components/BillActions";
 import StatusBadge from "@/components/StatusBadge";
 export const dynamic = "force-dynamic";
@@ -21,9 +22,24 @@ export default async function Bill(props: { params: Promise<{ id: string }> }) {
   if (!r || !r.folio) notFound();
   const [{ folio, totals: t }, live] = await Promise.all([getFolioTotals(r.folio.id), prisma.feeRule.findMany()]);
 
+  const today = new Date(new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Manila" }) + "T00:00:00.000Z");
   const upcoming = ["PENDING", "CONFIRMED"].includes(r.status);
   const open = r.status === "CHECKED_IN" && !folio.closedAt;
   const nights = nightsBetween(r.checkIn, r.checkOut);
+
+  // Rooms this guest could be moved to: ready, big enough, and free for the rest of the stay.
+  let options: RoomOption[] = [];
+  const canMove = open && r.checkOut > today && can(user.role, "reservation.edit");
+  if (canMove) {
+    const [rooms, stays] = await Promise.all([
+      prisma.room.findMany({ include: { roomType: true }, orderBy: { number: "asc" } }),
+      prisma.reservation.findMany({ where: { roomId: { not: null } } }),
+    ]);
+    options = rooms
+      .filter(x => x.id !== r.roomId && ["AVAILABLE", "CLEAN", "INSPECTED"].includes(x.status) && x.maxOccupancy >= r.adults + r.children && isRoomFree(x, stays, r.checkIn, r.checkOut, r.id))
+      .map(x => ({ id: x.id, number: x.number, typeName: x.roomType.name, sameType: x.roomTypeId === r.roomTypeId }));
+  }
+
   // Before check-in there is no room charge yet, so show an estimate that includes it.
   const lines = folio.items.map(i => ({ qty: i.qty, unitAmount: i.unitAmount, voided: !!i.voidedAt }));
   if (upcoming) lines.push({ qty: nights, unitAmount: r.ratePerNight, voided: false });
@@ -38,13 +54,14 @@ export default async function Bill(props: { params: Promise<{ id: string }> }) {
     : r.status === "NO_SHOW" ? "This guest did not arrive." : "This folio is closed.";
 
   return (<div className="space-y-5">
-    <div className="flex items-center justify-between"><div><h1 className="text-2xl font-semibold">{r.guest.fullName}</h1>
-      <p className="text-sm text-slate-500">{r.code} · Room {r.room?.number ?? "not assigned"} · {dt(r.checkIn)} to {dt(r.checkOut)}</p></div><StatusBadge status={r.status} /></div>
+    <div className="flex flex-wrap items-center justify-between gap-3"><div><h1 className="text-2xl font-semibold">{r.guest.fullName}</h1>
+      <p className="text-sm text-slate-500">{r.code} · Room {r.room?.number ?? "not assigned"} · {dt(r.checkIn)} to {dt(r.checkOut)}</p></div>
+      <div className="flex items-center gap-3">{canMove && r.room && <MoveRoom reservationId={r.id} version={r.version} current={r.room.number} options={options} ratePesos={r.ratePerNight / 100} />}<StatusBadge status={r.status} /></div></div>
     <div className="grid gap-4 lg:grid-cols-2">
       <section className={card}><h2 className="mb-2 font-semibold">Charges</h2>
         {upcoming && <div className="flex justify-between py-2 text-sm text-slate-500"><span>Room × {nights} night{nights === 1 ? "" : "s"} (estimate)</span><span>{formatPHP(nights * r.ratePerNight)}</span></div>}
         {folio.items.map(i => (<div key={i.id} className="border-t border-slate-100 py-2 text-sm first:border-0">
-          <div className={`flex justify-between ${i.voidedAt ? "text-slate-400 line-through" : ""}`}><span>{i.description}{i.qty > 1 ? ` × ${i.qty}` : ""}</span><span>{formatPHP(i.qty * i.unitAmount)}</span></div>
+          <div className={`flex justify-between ${i.voidedAt ? "text-slate-400 line-through" : ""}`}><span>{i.description}{i.qty > 1 && !/×/.test(i.description) ? ` × ${i.qty}` : ""}</span><span>{formatPHP(i.qty * i.unitAmount)}</span></div>
           {i.voidedAt ? <div className="text-xs text-slate-500">Voided: {i.voidReason}</div>
             : canVoid && i.category !== "ROOM" && <VoidButton itemId={i.id} label={i.description} />}</div>))}
         <div className="mt-2 text-sm">{row("Subtotal", formatPHP(tt.subtotal), true)}{tt.breakdown.map(b => row(b.name, formatPHP(b.amount)))}{row(upcoming ? "Estimated total" : "Total", formatPHP(tt.total), true)}</div></section>

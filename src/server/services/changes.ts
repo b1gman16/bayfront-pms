@@ -36,7 +36,7 @@ export async function updateReservation(id: string, raw: unknown, actor: Actor) 
 
       if (inHouse) {
         if (from.getTime() !== r.checkIn.getTime()) throw new AppError("The arrival date can't be changed after check-in");
-        if (d.roomId && d.roomId !== r.roomId) throw new AppError("Moving an in-house guest to another room isn't supported yet");
+        if (d.roomId && d.roomId !== r.roomId) throw new AppError("To move an in-house guest, use Move room on their bill page.");
         if (to < manilaToday()) throw new AppError("Check-out can't be before today");
       }
 
