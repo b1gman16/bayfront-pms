@@ -6,7 +6,8 @@ import { call, field, btn, uuid } from "./api";
 const METHODS = ["CASH", "GCASH", "MAYA", "CARD", "BANK_TRANSFER", "OTHER"];
 const peso = (c: number) => new Intl.NumberFormat("en-PH", { style: "currency", currency: "PHP" }).format(c / 100);
 
-export default function FolioActions({ reservationId, folioId, balance, canOverride }: { reservationId: string; folioId: string; balance: number; canOverride: boolean }) {
+export default function FolioActions({ reservationId, folioId, balance, canOverride, canDiscount = false }: {
+  reservationId: string; folioId: string; balance: number; canOverride: boolean; canDiscount?: boolean }) {
   const router = useRouter(); const key = useRef(uuid());
   const [msg, setMsg] = useState(""); const [err, setErr] = useState(""); const [busy, setBusy] = useState(false);
   async function run(fn: () => Promise<{ ok: boolean; error?: string }>, ok: string) { setBusy(true); setErr(""); setMsg(""); const r = await fn(); setBusy(false); if (r.ok) { setMsg(ok); router.refresh(); } else setErr(r.error ?? "Failed"); }
@@ -18,6 +19,11 @@ export default function FolioActions({ reservationId, folioId, balance, canOverr
   function charge(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault(); const f = new FormData(e.currentTarget); const form = e.currentTarget;
     run(async () => { const r = await call(`/api/v1/folios/${folioId}/items`, "POST", { category: f.get("category"), description: f.get("description"), qty: Number(f.get("qty")), unitPesos: Number(f.get("price")) }); if (r.ok) form.reset(); return r; }, "Charge added.");
+  }
+  function discount(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault(); const f = new FormData(e.currentTarget); const form = e.currentTarget;
+    if (!window.confirm("Add this discount to the bill? It is recorded in the audit log.")) return;
+    run(async () => { const r = await call(`/api/v1/folios/${folioId}/discount`, "POST", { mode: f.get("mode"), value: Number(f.get("value")), reason: f.get("reason") }); if (r.ok) form.reset(); return r; }, "Discount added.");
   }
   async function out(override: boolean) {
     const t = override ? `Check out with an UNPAID balance of ${peso(balance)}? This will be recorded.` : "Check out this guest? The folio will be closed.";
@@ -35,6 +41,13 @@ export default function FolioActions({ reservationId, folioId, balance, canOverr
         <input name="qty" type="number" min="1" defaultValue="1" aria-label="Quantity" className={field} /></div>
       <div className="grid grid-cols-2 gap-3"><input name="description" required placeholder="Description" className={field} /><input name="price" type="number" step="0.01" min="1" required placeholder="Price each (₱)" className={field} /></div>
       <button disabled={busy} className={btn}>Add charge</button></form>
+    {canDiscount && <form onSubmit={discount} className={`${sec} lg:col-span-2`}><h2 className="font-semibold">Add discount (manager)</h2>
+      <div className="grid gap-3 sm:grid-cols-3">
+        <select name="mode" aria-label="Discount type" className={field}><option value="PERCENT">Percent of the bill (%)</option><option value="FIXED">Fixed amount (₱)</option></select>
+        <input name="value" type="number" step="0.01" min="0.01" required placeholder="Amount or percent" aria-label="Discount amount" className={field} />
+        <input name="reason" required minLength={3} placeholder="Reason (required)" aria-label="Reason" className={field} /></div>
+      <p className="text-xs text-slate-500">A percentage is worked out on the bill as it is now and saved as a fixed amount. Charges added later aren't discounted. Fees and taxes are worked out after the discount.</p>
+      <button disabled={busy} className="rounded-md border border-slate-300 px-3.5 py-2 text-sm hover:bg-slate-50">Add discount</button></form>}
     <div className={`${sec} lg:col-span-2`}>
       {balance > 0 ? <p className="rounded bg-red-50 p-3 text-sm font-medium text-red-700">Unpaid balance: {peso(balance)}. Record payment before checking out.</p> : <p className="rounded bg-emerald-50 p-3 text-sm font-medium text-emerald-700">Fully paid. Ready to check out.</p>}
       <div className="flex flex-wrap gap-3"><button disabled={busy || balance > 0} onClick={() => out(false)} className={btn}>Check out</button>

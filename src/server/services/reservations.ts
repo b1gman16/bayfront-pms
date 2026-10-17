@@ -3,9 +3,11 @@ import type { Prisma } from "@prisma/client";
 import { prisma } from "../db";
 import { audit } from "../audit";
 import { AppError, Actor } from "../http";
-import { isRoomFree, nightsBetween } from "../domain/availability";
+import { isRoomFree } from "../domain/availability";
 import { computeFolio, formatPHP, rulesForFolio, snapshotRules } from "../domain/folio";
+import { bandsOf, ratesFor, roomLine } from "../domain/rates";
 import { can } from "../domain/permissions";
+import { quote } from "./pricing";
 
 const day = (s: string) => new Date(s + "T00:00:00.000Z");
 export const createSchema = z.object({
@@ -28,12 +30,15 @@ export async function createReservation(raw: unknown, actor: Actor) {
         const stays = await tx.reservation.findMany({ where: { roomId: room.id } });
         if (!isRoomFree(room, stays, from, to)) throw new AppError(`Room ${room.number} is not available for those dates`);
       }
+      const q = await quote(tx, d.roomTypeId, from, to);          // the price of every night is saved with the booking
+      const nightly = q.nights.map(n => n.rate);
       const last = await tx.reservation.aggregate({ _count: true });
       const code = `BR-${1000 + last._count + 1}`;
       const r = await tx.reservation.create({ data: { code, guestId: d.guestId, roomTypeId: d.roomTypeId,
         roomId: d.roomId, checkIn: from, checkOut: to, adults: d.adults, children: d.children, source: d.source,
-        specialRequests: d.specialRequests, ratePerNight: type.baseRate, status: "CONFIRMED", createdById: actor.id } });
-      await audit(tx, actor.id, "reservation.create", "Reservation", r.id, `${actor.name} created ${code}`, undefined, r);
+        specialRequests: d.specialRequests, ratePerNight: nightly[0], nightly: nightly as unknown as Prisma.InputJsonValue,
+        status: "CONFIRMED", createdById: actor.id } });
+      await audit(tx, actor.id, "reservation.create", "Reservation", r.id, `${actor.name} created ${code}, room total ${formatPHP(q.total)}`, undefined, r);
       return r;
     });
   } catch (e: any) {                       // DB exclusion constraint = last line of defence against races
@@ -55,8 +60,12 @@ export async function checkIn(id: string, version: number, override: boolean, ac
     await tx.room.update({ where: { id: r.room.id }, data: { status: "OCCUPIED" } });
     const folio = await tx.folio.upsert({ where: { reservationId: id }, create: { reservationId: id }, update: {} });
     const has = await tx.folioItem.count({ where: { folioId: folio.id, category: "ROOM" } });
-    if (!has) await tx.folioItem.create({ data: { folioId: folio.id, category: "ROOM", description: `Room ${r.room.number} x ${nightsBetween(r.checkIn, r.checkOut)} nights`,
-      qty: nightsBetween(r.checkIn, r.checkOut), unitAmount: r.ratePerNight, businessDate: r.checkIn, postedById: actor.id } });
+    if (!has) {
+      // One bill line per run of nights at the same price.
+      const bands = bandsOf(ratesFor(r).map(rate => ({ rate })), r.checkIn);
+      for (const b of bands) await tx.folioItem.create({ data: { folioId: folio.id, category: "ROOM",
+        description: roomLine(r.room.number, b.nights, b.rate, bands.length > 1), qty: b.nights, unitAmount: b.rate, businessDate: b.start, postedById: actor.id } });
+    }
     await audit(tx, actor.id, "checkin", "Reservation", id, `${actor.name} checked in ${r.code} to Room ${r.room.number}`);
     return { folioId: folio.id };
   });

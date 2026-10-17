@@ -4,6 +4,7 @@ import { audit } from "../audit";
 import { AppError, Actor } from "../http";
 import { computeFolio, formatPHP } from "../domain/folio";
 import { nightsBetween } from "../domain/availability";
+import { ratesFor, sumRates } from "../domain/rates";
 
 const schema = z.object({
   amount: z.number().int().positive(),
@@ -24,7 +25,7 @@ export async function recordDeposit(reservationId: string, raw: unknown, actor: 
       if (!["PENDING", "CONFIRMED"].includes(r.status))
         throw new AppError("Deposits can only be recorded before check-in. For guests in the house, use their bill page.");
       const live = await tx.feeRule.findMany();
-      const estimate = computeFolio([{ qty: nightsBetween(r.checkIn, r.checkOut), unitAmount: r.ratePerNight }], live, []).total;
+      const estimate = computeFolio([{ qty: 1, unitAmount: sumRates(ratesFor(r)) }], live, []).total;
       const held = (r.folio?.payments ?? []).reduce((s, p) => s + (p.kind === "PAYMENT" ? p.amount : -p.amount), 0);
       if (held + d.amount > estimate)
         throw new AppError(`That would bring the deposits to ${formatPHP(held + d.amount)}, more than the estimated room bill of ${formatPHP(estimate)}.`, 400);

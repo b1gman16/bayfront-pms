@@ -133,6 +133,7 @@ model Reservation {
   ratePerNight Int
   specialRequests String?
   internalNotes String?
+  nightly Json?
   version Int @default(1)
   createdById String
   cancelReason String?
@@ -247,4 +248,17 @@ model AuditLog {
 model Setting {
   key   String @id
   value Json
+}
+
+model RateRule {
+  id         String    @id @default(cuid())
+  name       String
+  roomTypeId String?
+  startDate  DateTime? @db.Date
+  endDate    DateTime? @db.Date
+  days       Int[]
+  rate       Int
+  priority   Int       @default(0)
+  active     Boolean   @default(true)
+  createdAt  DateTime  @default(now())
 }

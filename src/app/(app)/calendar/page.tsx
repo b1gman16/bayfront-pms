@@ -53,12 +53,14 @@ export default async function CalendarPage(props: { searchParams: Promise<{ view
   const unassigned = stays.filter(s => !s.roomId);
   const occupied = days.map(d => assigned.filter(s => s.checkIn <= d && s.checkOut > d).length);
 
+  // Phones get a narrower room column and narrower days; larger screens get the roomy layout.
   const cell = n === 1 ? 360 : n <= 7 ? 96 : 40;
-  const minWidth = 160 + n * cell;
+  const cellSm = n === 1 ? 220 : n <= 7 ? 52 : 30;
+  const wrap = { "--mw": `${160 + n * cell}px`, "--mw-sm": `${96 + n * cellSm}px` } as React.CSSProperties;
   const bg = (d: Date) => (+d === +today ? "bg-sky-50" : [0, 6].includes(d.getUTCDay()) ? "bg-slate-50" : "");
 
   const tab = (v: View, l: string) => (
-    <Link key={v} href={href(v, view === v ? anchor : anchor)} aria-current={view === v ? "page" : undefined}
+    <Link key={v} href={href(v, anchor)} aria-current={view === v ? "page" : undefined}
       className={`rounded-md px-3 py-1.5 text-sm ${view === v ? "bg-brand text-white" : "text-slate-600 hover:bg-slate-100"}`}>{l}</Link>);
   const nav = "rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm hover:bg-slate-50";
 
@@ -74,18 +76,19 @@ export default async function CalendarPage(props: { searchParams: Promise<{ view
     <div className="flex flex-wrap gap-4 text-xs text-slate-600">
       {Object.entries(NAME).map(([k, l]) => <span key={k} className="flex items-center gap-1.5"><span className={`h-3 w-3 rounded ${BAR[k].split(" ")[0]}`} />{l}</span>)}
       <span className="flex items-center gap-1.5"><span className="h-3 w-3 rounded border border-slate-300 bg-white" />Free</span></div>
+    {view !== "day" && <p className="text-xs text-slate-500 md:hidden">Swipe sideways to see more days. Day view fits a phone screen best.</p>}
 
     <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
-      <div style={{ minWidth }}>
+      <div className="min-w-[var(--mw-sm)] sm:min-w-[var(--mw)]" style={wrap}>
         <div className="flex border-b border-slate-200 bg-slate-50 text-xs">
-          <div className="sticky left-0 z-20 w-40 shrink-0 bg-slate-50 px-3 py-2 font-medium text-slate-500">Room</div>
+          <div className="sticky left-0 z-20 w-24 shrink-0 bg-slate-50 px-3 py-2 font-medium text-slate-500 sm:w-40">Room</div>
           <div className="flex flex-1">{days.map(d => (
             <div key={+d} className={`flex-1 border-l border-slate-200 py-2 text-center ${bg(d)} ${+d === +today ? "font-semibold text-brand" : "text-slate-500"}`}>
               {n === 1 ? d.toLocaleDateString("en-PH", { weekday: "long", timeZone: "UTC" }) : <>{d.toLocaleDateString("en-PH", { weekday: "short", timeZone: "UTC" }).slice(0, n > 7 ? 1 : 3)}<br />{d.getUTCDate()}</>}
             </div>))}</div></div>
 
         <div className="flex border-b border-slate-200 text-xs">
-          <div className="sticky left-0 z-10 w-40 shrink-0 bg-white px-3 py-1.5 font-medium text-slate-500">Occupied</div>
+          <div className="sticky left-0 z-10 w-24 shrink-0 bg-white px-3 py-1.5 font-medium text-slate-500 sm:w-40">Occupied</div>
           <div className="flex flex-1">{occupied.map((o, i) => <div key={i} className={`flex-1 border-l border-slate-100 py-1.5 text-center ${bg(days[i])} ${o >= rooms.length && rooms.length > 0 ? "font-semibold text-red-600" : "text-slate-600"}`}>{o}/{rooms.length}</div>)}</div></div>
 
         {types.map(t => {
@@ -95,16 +98,16 @@ export default async function CalendarPage(props: { searchParams: Promise<{ view
             <div className="sticky left-0 border-b border-slate-100 bg-slate-100/70 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-500">{t.name}</div>
             {list.map(room => (
               <div key={room.id} className="flex border-b border-slate-100">
-                <div className="sticky left-0 z-10 w-40 shrink-0 bg-white px-3 py-2 text-sm font-medium">Room {room.number}
-                  {["MAINTENANCE", "OUT_OF_ORDER"].includes(room.status) && <span className="ml-2 rounded bg-red-50 px-1.5 text-[11px] font-normal text-red-700">{room.status === "MAINTENANCE" ? "Maintenance" : "Out of order"}</span>}</div>
-                <div className="relative h-11 flex-1">
+                <div className="sticky left-0 z-10 w-24 shrink-0 bg-white px-3 py-2 text-sm font-medium sm:w-40">Room {room.number}
+                  {["MAINTENANCE", "OUT_OF_ORDER"].includes(room.status) && <div className="mt-0.5"><span className="rounded bg-red-50 px-1.5 text-[11px] font-normal text-red-700">{room.status === "MAINTENANCE" ? "Maintenance" : "Out of order"}</span></div>}</div>
+                <div className="relative h-14 flex-1 sm:h-11">
                   <div className="absolute inset-0 flex">{days.map(d => <div key={+d} className={`flex-1 border-l border-slate-100 ${bg(d)}`} />)}</div>
                   {assigned.filter(s => s.roomId === room.id).map(s => {
                     const l = Math.max((+s.checkIn - +start) / DAY + 0.5, 0), r = Math.min((+s.checkOut - +start) / DAY + 0.5, n);
                     if (r <= l) return null;
                     const label = `${s.guest.fullName} · ${s.code} · ${short(s.checkIn)} to ${short(s.checkOut)} · ${NAME[s.status]}`;
                     return (<Link key={s.id} href={`/reservations/${s.id}`} title={label} aria-label={label}
-                      className={`absolute bottom-1.5 top-1.5 truncate rounded px-2 text-xs leading-7 shadow-sm hover:brightness-110 ${BAR[s.status]}`}
+                      className={`absolute bottom-1.5 top-1.5 truncate rounded px-2 text-xs leading-9 shadow-sm hover:brightness-110 sm:leading-7 ${BAR[s.status]}`}
                       style={{ left: `${(l / n) * 100}%`, width: `calc(${((r - l) / n) * 100}% - 2px)` }}>{s.guest.fullName}</Link>);
                   })}</div></div>))}</div>);
         })}

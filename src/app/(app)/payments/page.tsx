@@ -4,6 +4,7 @@ import { formatPHP } from "@/server/domain/folio";
 export const dynamic = "force-dynamic";
 
 const card = "rounded-xl border border-slate-200 bg-white p-5 shadow-sm";
+const when = (d: Date) => d.toLocaleString("en-PH", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit", timeZone: "Asia/Manila" });
 
 export default async function Payments() {
   const day = new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Manila" });
@@ -21,15 +22,25 @@ export default async function Payments() {
       <div className={`${card} md:col-span-2`}><div className="mb-2 text-sm text-slate-500">By payment method, today</div>
         {byMethod.size === 0 ? <p className="text-sm text-slate-500">No payments yet today.</p> :
           <div className="flex flex-wrap gap-x-8 gap-y-2">{[...byMethod].map(([m, v]) => <div key={m}><div className="text-xs text-slate-500">{m.replace("_", " ")}</div><div className="font-semibold">{formatPHP(v)}</div></div>)}</div>}</div></div>
-    <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
+
+    <div className="hidden overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm md:block">
       <table className="w-full text-sm"><thead className="bg-slate-50 text-left text-xs text-slate-500"><tr>
         {["Date", "Guest", "Reservation", "Method", "Reference", "Amount", ""].map((h, i) => <th key={i} className="px-4 py-3 font-medium">{h}</th>)}</tr></thead>
         <tbody>{rows.map(r => (<tr key={r.id} className="border-t border-slate-100">
-          <td className="px-4 py-3">{r.at.toLocaleString("en-PH", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit", timeZone: "Asia/Manila" })}</td>
+          <td className="px-4 py-3">{when(r.at)}</td>
           <td className="px-4">{r.folio.reservation.guest.fullName}</td>
           <td className="px-4"><Link href={`/front-desk/${r.folio.reservationId}`} className="text-brand">{r.folio.reservation.code}</Link></td>
           <td className="px-4">{r.method.replace("_", " ")}{r.kind === "REFUND" ? " (refund)" : ""}</td><td className="px-4 text-slate-500">{r.reference ?? "-"}</td>
           <td className={`px-4 font-medium ${r.kind === "REFUND" ? "text-red-600" : ""}`}>{r.kind === "REFUND" ? "-" : ""}{formatPHP(r.amount)}</td>
           <td className="px-4"><Link href={`/receipts/${r.id}`} className="text-brand">Receipt</Link></td></tr>))}</tbody></table>
-      {rows.length === 0 && <p className="p-8 text-center text-sm text-slate-500">No payments recorded yet.</p>}</div></div>);
+      {rows.length === 0 && <p className="p-8 text-center text-sm text-slate-500">No payments recorded yet.</p>}</div>
+
+    <div className="space-y-2 md:hidden">
+      {rows.map(r => (<div key={r.id} className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+        <div className="flex items-start justify-between gap-2"><div className="font-semibold">{r.folio.reservation.guest.fullName}</div>
+          <div className={`font-semibold ${r.kind === "REFUND" ? "text-red-600" : ""}`}>{r.kind === "REFUND" ? "-" : ""}{formatPHP(r.amount)}</div></div>
+        <div className="mt-1 text-sm text-slate-500">{when(r.at)} · {r.method.replace("_", " ")}{r.kind === "REFUND" ? " (refund)" : ""}{r.reference ? ` · ${r.reference}` : ""}</div>
+        <div className="mt-2 flex gap-4 text-sm"><Link href={`/front-desk/${r.folio.reservationId}`} className="text-brand">{r.folio.reservation.code}</Link><Link href={`/receipts/${r.id}`} className="text-brand">Receipt</Link></div></div>))}
+      {rows.length === 0 && <p className="rounded-xl border border-dashed border-slate-300 bg-white p-8 text-center text-sm text-slate-500">No payments recorded yet.</p>}</div>
+  </div>);
 }

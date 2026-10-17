@@ -6,7 +6,7 @@ const FRONT = ["reservation.view","reservation.create","reservation.edit","reser
 
 export const PERMISSIONS: Record<Role, readonly string[]> = {
   OWNER: ["*"],
-  MANAGER: [...FRONT, "payment.refund","folio.void","room.manage","rate.manage","report.view","report.financial",
+  MANAGER: [...FRONT, "payment.refund","folio.void","folio.discount","room.manage","rate.manage","report.view","report.financial",
     "housekeeping.manage","housekeeping.update","maintenance.manage","user.manage","audit.view","checkout.override"],
   FRONT_DESK: FRONT,
   HOUSEKEEPING: ["room.view","room.status.clean","housekeeping.view","housekeeping.update","maintenance.report"],

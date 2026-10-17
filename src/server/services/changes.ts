@@ -1,10 +1,12 @@
 import { z } from "zod";
+import type { Prisma } from "@prisma/client";
 import { prisma } from "../db";
 import { audit } from "../audit";
 import { AppError, Actor } from "../http";
-import { isRoomFree, nightsBetween } from "../domain/availability";
+import { isRoomFree } from "../domain/availability";
 import { computeFolio, formatPHP, snapshotRules } from "../domain/folio";
-import type { Prisma } from "@prisma/client";
+import { bandsOf, nightRate, ratesFor, repriceNights, roomLine, sumRates } from "../domain/rates";
+import { toLite } from "./pricing";
 
 const day = (s: string) => new Date(s + "T00:00:00.000Z");
 const manilaToday = () => day(new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Manila" }));
@@ -53,26 +55,50 @@ export async function updateReservation(id: string, raw: unknown, actor: Actor) 
         if (!isRoomFree(room, stays, from, to, id)) throw new AppError(`Room ${room.number} isn't available for those dates`);
       }
 
+      // Nights the guest already had keep their price. New nights are priced with today's rates.
+      const oldRates = ratesFor(r);
+      const datesChanged = from.getTime() !== r.checkIn.getTime() || to.getTime() !== r.checkOut.getTime();
+      let newRates = oldRates;
+      if (datesChanged) {
+        const rules = (await tx.rateRule.findMany({ where: { active: true } })).map(toLite);
+        newRates = repriceNights(r.checkIn, oldRates, from, to, night => nightRate(r.roomType.baseRate, rules, r.roomTypeId, night).rate);
+      }
+
       const upd = await tx.reservation.updateMany({ where: { id, version: r.version }, data: {
         checkIn: from, checkOut: to, adults: d.adults, children: d.children, source: d.source, roomId,
-        specialRequests: d.specialRequests || null, internalNotes: d.internalNotes || null, version: { increment: 1 } } });
+        specialRequests: d.specialRequests || null, internalNotes: d.internalNotes || null, version: { increment: 1 },
+        ...(datesChanged ? { nightly: newRates as unknown as Prisma.InputJsonValue, ratePerNight: newRates[0] } : {}) } });
       if (upd.count === 0) throw new AppError(CHANGED);
 
-      const oldN = nightsBetween(r.checkIn, r.checkOut), newN = nightsBetween(from, to);
-      if (inHouse && r.folio && oldN !== newN) {
-        // Keep the old room line (voided, with a reason) and post one new line, so the history stays visible.
-        await tx.folioItem.updateMany({ where: { folioId: r.folio.id, category: "ROOM", voidedAt: null },
-          data: { voidedAt: new Date(), voidedById: actor.id, voidReason: `Stay changed from ${oldN} to ${newN} night(s)` } });
-        await tx.folioItem.create({ data: { folioId: r.folio.id, category: "ROOM", description: `Room ${r.room?.number} × ${newN} night(s)`,
-          qty: newN, unitAmount: r.ratePerNight, businessDate: r.checkIn, postedById: actor.id } });
+      // In-house stay made longer or shorter: adjust the room lines on the bill.
+      const oldN = oldRates.length, newN = newRates.length;
+      if (inHouse && r.folio && newN !== oldN) {
+        const items = await tx.folioItem.findMany({ where: { folioId: r.folio.id, category: "ROOM", voidedAt: null }, orderBy: { businessDate: "asc" } });
+        if (newN < oldN) {
+          let cut = oldN - newN;
+          for (const it of [...items].reverse()) {
+            if (cut <= 0) break;
+            await tx.folioItem.update({ where: { id: it.id }, data: { voidedAt: new Date(), voidedById: actor.id, voidReason: `Stay shortened to ${newN} night(s)` } });
+            if (cut < it.qty) {
+              const room = /^Room (\S+)/.exec(it.description)?.[1] ?? r.room?.number ?? "";
+              await tx.folioItem.create({ data: { folioId: it.folioId, category: "ROOM", description: roomLine(room, it.qty - cut, it.unitAmount, /@/.test(it.description)),
+                qty: it.qty - cut, unitAmount: it.unitAmount, businessDate: it.businessDate, postedById: actor.id } });
+            }
+            cut -= Math.min(cut, it.qty);
+          }
+        } else {
+          const bands = bandsOf(newRates.slice(oldN).map(rate => ({ rate })), r.checkOut);
+          const mixed = new Set(newRates).size > 1;
+          for (const b of bands) await tx.folioItem.create({ data: { folioId: r.folio.id, category: "ROOM", description: roomLine(r.room?.number ?? "", b.nights, b.rate, mixed),
+            qty: b.nights, unitAmount: b.rate, businessDate: b.start, postedById: actor.id } });
+        }
       }
 
       const parts: string[] = [];
-      if (from.getTime() !== r.checkIn.getTime() || to.getTime() !== r.checkOut.getTime()) parts.push(`dates ${fmt(r.checkIn)}-${fmt(r.checkOut)} → ${fmt(from)}-${fmt(to)}`);
+      if (datesChanged) parts.push(`dates ${fmt(r.checkIn)}-${fmt(r.checkOut)} → ${fmt(from)}-${fmt(to)}, room charges ${formatPHP(sumRates(oldRates))} → ${formatPHP(sumRates(newRates))}`);
       if (roomId !== r.roomId) parts.push(`room ${r.room?.number ?? "none"} → ${newRoomNumber}`);
       if (d.adults !== r.adults || d.children !== r.children) parts.push("guest count");
       if (d.source !== r.source || (d.specialRequests || null) !== r.specialRequests || (d.internalNotes || null) !== r.internalNotes) parts.push("details");
-      if (inHouse && oldN !== newN) parts.push(`bill adjusted to ${newN} night(s) at ${formatPHP(r.ratePerNight)}`);
       await audit(tx, actor.id, "reservation.update", "Reservation", id,
         `${actor.name} changed ${r.code}${parts.length ? ": " + parts.join(", ") : " (no changes)"}`,
         { checkIn: r.checkIn, checkOut: r.checkOut, roomId: r.roomId, adults: r.adults, children: r.children },

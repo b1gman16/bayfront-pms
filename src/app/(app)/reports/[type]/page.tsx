@@ -28,6 +28,7 @@ export default async function ReportPage(props: { params: Promise<{ type: string
     : [["Today", today, today], ["Yesterday", shift(today, -1), shift(today, -1)], ["Last 7 days", shift(today, -6), today], ["This month", monthStart, today], ["Last month", lastEnd.slice(0, 8) + "01", lastEnd]];
   const csv = `/api/v1/reports/${def.key}?from=${from}&to=${to}&format=csv`;
   const period = def.noDates ? "As of now" : def.single ? nice(from) : from === to ? nice(from) : `${nice(from)} to ${nice(to)}`;
+  const num = (j: number) => rep.columns[j].type && rep.columns[j].type !== "text";
 
   return (<div className="space-y-5">
     <style>{`@media print { aside, header, .no-print { display: none !important; } [class~="md:pl-60"] { padding-left: 0 !important; } body { background: #fff !important; } }`}</style>
@@ -47,13 +48,24 @@ export default async function ReportPage(props: { params: Promise<{ type: string
       <div key={s.label} className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm"><div className="text-xs text-slate-500">{s.label}</div><div className="mt-1 text-xl font-semibold">{show(s.value, s.type)}</div></div>))}</div>}
     {rep.note && <p className="text-sm text-slate-500">{rep.note}</p>}
 
-    <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
+    <div className="hidden overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm md:block print:block">
       <table className="w-full text-sm"><thead className="bg-slate-50 text-left text-xs text-slate-500"><tr>
         {rep.columns.map(c => <th key={c.label} className={`px-4 py-3 font-medium ${c.type && c.type !== "text" ? "text-right" : ""}`}>{c.label}</th>)}</tr></thead>
         <tbody>{rep.rows.map((r, i) => <tr key={i} className="border-t border-slate-100">
-          {r.map((v, j) => <td key={j} className={`px-4 py-2.5 ${rep.columns[j].type && rep.columns[j].type !== "text" ? "text-right tabular-nums" : ""}`}>{show(v, rep.columns[j].type)}</td>)}</tr>)}</tbody>
+          {r.map((v, j) => <td key={j} className={`px-4 py-2.5 ${num(j) ? "text-right tabular-nums" : ""}`}>{show(v, rep.columns[j].type)}</td>)}</tr>)}</tbody>
         {rep.footer && rep.rows.length > 0 && <tfoot><tr className="border-t-2 border-slate-300 bg-slate-50 font-semibold">
-          {rep.footer.map((v, j) => <td key={j} className={`px-4 py-2.5 ${rep.columns[j].type && rep.columns[j].type !== "text" ? "text-right tabular-nums" : ""}`}>{show(v, rep.columns[j].type)}</td>)}</tr></tfoot>}</table>
+          {rep.footer.map((v, j) => <td key={j} className={`px-4 py-2.5 ${num(j) ? "text-right tabular-nums" : ""}`}>{show(v, rep.columns[j].type)}</td>)}</tr></tfoot>}</table>
       {rep.rows.length === 0 && <p className="p-8 text-center text-sm text-slate-500">Nothing to show for this period.</p>}</div>
+
+    <div className="space-y-2 md:hidden print:hidden">
+      {rep.rows.map((r, i) => (<div key={i} className="rounded-xl border border-slate-200 bg-white p-4 text-sm shadow-sm">
+        <div className="font-medium">{show(r[0], rep.columns[0].type)}</div>
+        <dl className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1">{r.slice(1).map((v, j) => (<div key={j} className="contents">
+          <dt className="text-slate-500">{rep.columns[j + 1].label}</dt><dd className="text-right">{show(v, rep.columns[j + 1].type)}</dd></div>))}</dl></div>))}
+      {rep.footer && rep.rows.length > 0 && <div className="rounded-xl border-2 border-slate-300 bg-slate-50 p-4 text-sm font-semibold">
+        <div>{show(rep.footer[0], rep.columns[0].type)}</div>
+        <dl className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1">{rep.footer.slice(1).map((v, j) => (<div key={j} className="contents">
+          <dt className="font-normal text-slate-500">{rep.columns[j + 1].label}</dt><dd className="text-right">{show(v, rep.columns[j + 1].type)}</dd></div>))}</dl></div>}
+      {rep.rows.length === 0 && <p className="rounded-xl border border-dashed border-slate-300 bg-white p-8 text-center text-sm text-slate-500">Nothing to show for this period.</p>}</div>
     <p className="hidden text-xs text-slate-400 print:block">Printed {new Date().toLocaleString("en-PH", { timeZone: "Asia/Manila" })}</p></div>);
 }

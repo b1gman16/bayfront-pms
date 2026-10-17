@@ -10,6 +10,7 @@ import StatusBadge from "@/components/StatusBadge";
 import ReservationEditor from "@/components/ReservationEditor";
 import DepositPanel from "@/components/DepositPanel";
 export const dynamic = "force-dynamic";
+   import { bandsOf, ratesFor, sumRates } from "@/server/domain/rates";
 
 const card = "rounded-xl border border-slate-200 bg-white p-5 shadow-sm";
 const dt = (d: Date) => d.toLocaleDateString("en-PH", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" });
@@ -26,9 +27,10 @@ export default async function ReservationPage(props: { params: Promise<{ id: str
   const upcoming = ["PENDING", "CONFIRMED"].includes(r.status);
   const canEdit = editable && can(user.role, "reservation.edit");
   const canCancel = can(user.role, "reservation.cancel");
-  const nights = nightsBetween(r.checkIn, r.checkOut);
+     const nights = nightsBetween(r.checkIn, r.checkOut);
+   const rates = ratesFor(r); const roomTotal = sumRates(rates); const bands = bandsOf(rates.map(rate => ({ rate })), r.checkIn);
   const held = (r.folio?.payments ?? []).reduce((s, p) => s + (p.kind === "PAYMENT" ? p.amount : -p.amount), 0);
-  const estimate = computeFolio([{ qty: nights, unitAmount: r.ratePerNight }], live, []).total;
+  const estimate =    computeFolio([{ qty: 1, unitAmount: roomTotal }], live, []).total;
   const row = (l: string, v: React.ReactNode) => <div className="flex justify-between gap-4 border-t border-slate-100 py-2 text-sm first:border-0"><span className="text-slate-500">{l}</span><span className="text-right">{v}</span></div>;
 
   return (<div className="space-y-5">
@@ -41,8 +43,8 @@ export default async function ReservationPage(props: { params: Promise<{ id: str
           {row("Phone", r.guest.phone ?? "-")}{row("Email", r.guest.email ?? "-")}
           {row("Stay", `${dt(r.checkIn)} to ${dt(r.checkOut)} (${nights} night${nights === 1 ? "" : "s"})`)}
           {row("Room", r.room ? `${r.roomType.name} ${r.room.number}` : `${r.roomType.name} (unassigned)`)}
-          {row("Guests", `${r.adults} adult(s), ${r.children} child(ren)`)}{row("Rate", `${formatPHP(r.ratePerNight)} per night`)}
-          {row("Estimated room total", formatPHP(r.ratePerNight * nights))}{row("Source", r.source.replace("_", " "))}
+          {row("Guests", `${r.adults} adult(s), ${r.children} child(ren)`)}   {row("Rate", bands.length === 1 ? `${formatPHP(bands[0].rate)} per night` : bands.map(b => `${b.nights} × ${formatPHP(b.rate)}`).join(", "))}
+             {row("Estimated room total", formatPHP(roomTotal))}{row("Source", r.source.replace("_", " "))}
           {!upcoming && r.folio && held !== 0 && row("Deposits held", formatPHP(held))}
           {r.specialRequests && row("Requests", r.specialRequests)}{r.internalNotes && row("Notes", r.internalNotes)}
           {r.cancelReason && row("Cancelled because", r.cancelReason)}

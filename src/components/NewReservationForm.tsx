@@ -14,11 +14,15 @@ export default function NewReservationForm({ types }: { types: Type[] }) {
   const [from, setFrom] = useState(iso(0)); const [to, setTo] = useState(iso(1)); const [typeId, setTypeId] = useState(types[0]?.id ?? "");
   const [rooms, setRooms] = useState<{ id: string; number: string }[]>([]); const [roomId, setRoomId] = useState("");
   const [now, setNow] = useState(false); const [err, setErr] = useState(""); const [busy, setBusy] = useState(false);
+  const [quote, setQuote] = useState<{ total: number; bands: { start: string; nights: number; rate: number; name: string | null }[] } | null>(null);
 
   useEffect(() => { if (q.trim().length < 2) { setFound([]); return; }
     const t = setTimeout(async () => { const r = await call(`/api/v1/guests?q=${encodeURIComponent(q)}`, "GET"); if (r.ok) setFound(r.data); }, 250); return () => clearTimeout(t); }, [q]);
   useEffect(() => { setRoomId(""); if (!typeId || to <= from) { setRooms([]); return; }
     call(`/api/v1/availability?from=${from}&to=${to}&roomTypeId=${typeId}`, "GET").then(r => setRooms(r.ok ? r.data : [])); }, [from, to, typeId]);
+
+  useEffect(() => { setQuote(null); if (!typeId || to <= from) return;
+    call(`/api/v1/quote?from=${from}&to=${to}&roomTypeId=${typeId}`, "GET").then(r => r.ok && setQuote(r.data)); }, [from, to, typeId]);
 
   async function submit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault(); setErr(""); const f = new FormData(e.currentTarget); setBusy(true);
@@ -63,7 +67,26 @@ export default function NewReservationForm({ types }: { types: Type[] }) {
       <L t="Children"><input name="children" type="number" min={0} defaultValue={0} className={field} /></L>
       <L t="Booking source"><select name="source" className={field}>{["WALK_IN", "PHONE", "FACEBOOK", "WEBSITE", "AGODA", "BOOKING_COM", "OTHER"].map(s => <option key={s}>{s}</option>)}</select></L></div>
     <L t="Special requests"><textarea name="requests" rows={2} className={field} /></L>
-    {t && to > from && <p className="text-sm text-slate-600">Rate: ₱{t.ratePesos.toLocaleString("en-PH")} per night, {Math.round((+new Date(to) - +new Date(from)) / 864e5)} night(s). Max {t.maxOccupancy} guests.</p>}
+    {t && to > from && quote && (
+      <div className="rounded-lg bg-slate-50 p-3 text-sm text-slate-700">
+        {quote.bands.map(b => (
+          <div key={b.start} className="flex justify-between gap-3">
+            <span>{b.nights} night{b.nights === 1 ? "" : "s"} × ₱{(b.rate / 100).toLocaleString("en-PH")}{b.name ? ` (${b.name})` : ""}</span>
+            <span>₱{(b.nights * b.rate / 100).toLocaleString("en-PH")}</span>
+          </div>
+        ))}
+        <div className="mt-1 flex justify-between border-t border-slate-200 pt-1 font-semibold">
+          <span>Room total (before taxes and fees)</span>
+          <span>₱{(quote.total / 100).toLocaleString("en-PH")}</span>
+        </div>
+        <div className="text-xs text-slate-500">Max {t.maxOccupancy} guests.</div>
+      </div>
+    )}
+    {t && (
+      <p className="text-sm text-slate-600">
+        ₱{t.ratePesos.toLocaleString("en-PH")} per night, {Math.round((+new Date(to) - +new Date(from)) / 864e5)} night(s). Max {t.maxOccupancy} guests.
+      </p>
+    )}
     <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={now} onChange={e => setNow(e.target.checked)} /> Walk-in: check in now</label>
     {err && <p role="alert" className="rounded bg-red-50 p-2 text-sm text-red-700">{err}</p>}
     <button disabled={busy || to <= from} className={btn}>{busy ? "Saving…" : now ? "Save and check in" : "Save reservation"}</button>

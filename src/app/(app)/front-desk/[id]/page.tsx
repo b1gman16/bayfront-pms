@@ -11,6 +11,7 @@ import FolioActions from "@/components/FolioActions";
 import MoveRoom, { RoomOption } from "@/components/MoveRoom";
 import { RefundButton, VoidButton } from "@/components/BillActions";
 import StatusBadge from "@/components/StatusBadge";
+   import { ratesFor, sumRates } from "@/server/domain/rates";
 export const dynamic = "force-dynamic";
 const card = "rounded-xl border border-slate-200 bg-white p-5 shadow-sm";
 const dt = (d: Date) => d.toLocaleDateString("en-PH", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" });
@@ -25,7 +26,8 @@ export default async function Bill(props: { params: Promise<{ id: string }> }) {
   const today = new Date(new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Manila" }) + "T00:00:00.000Z");
   const upcoming = ["PENDING", "CONFIRMED"].includes(r.status);
   const open = r.status === "CHECKED_IN" && !folio.closedAt;
-  const nights = nightsBetween(r.checkIn, r.checkOut);
+     const nights = nightsBetween(r.checkIn, r.checkOut);
+   const roomTotal = sumRates(ratesFor(r));
 
   // Rooms this guest could be moved to: ready, big enough, and free for the rest of the stay.
   let options: RoomOption[] = [];
@@ -42,7 +44,7 @@ export default async function Bill(props: { params: Promise<{ id: string }> }) {
 
   // Before check-in there is no room charge yet, so show an estimate that includes it.
   const lines = folio.items.map(i => ({ qty: i.qty, unitAmount: i.unitAmount, voided: !!i.voidedAt }));
-  if (upcoming) lines.push({ qty: nights, unitAmount: r.ratePerNight, voided: false });
+  if (upcoming)    lines.push({ qty: 1, unitAmount: roomTotal, voided: false });
   const tt = upcoming ? computeFolio(lines, live, folio.payments) : t;
 
   const canVoid = open && can(user.role, "folio.void");
@@ -59,7 +61,7 @@ export default async function Bill(props: { params: Promise<{ id: string }> }) {
       <div className="flex items-center gap-3">{canMove && r.room && <MoveRoom reservationId={r.id} version={r.version} current={r.room.number} options={options} ratePesos={r.ratePerNight / 100} />}<StatusBadge status={r.status} /></div></div>
     <div className="grid gap-4 lg:grid-cols-2">
       <section className={card}><h2 className="mb-2 font-semibold">Charges</h2>
-        {upcoming && <div className="flex justify-between py-2 text-sm text-slate-500"><span>Room × {nights} night{nights === 1 ? "" : "s"} (estimate)</span><span>{formatPHP(nights * r.ratePerNight)}</span></div>}
+        {upcoming && <div className="flex justify-between py-2 text-sm text-slate-500"><span>Room × {nights} night{nights === 1 ? "" : "s"} (estimate)</span><span>   {formatPHP(roomTotal)}</span></div>}
         {folio.items.map(i => (<div key={i.id} className="border-t border-slate-100 py-2 text-sm first:border-0">
           <div className={`flex justify-between ${i.voidedAt ? "text-slate-400 line-through" : ""}`}><span>{i.description}{i.qty > 1 && !/×/.test(i.description) ? ` × ${i.qty}` : ""}</span><span>{formatPHP(i.qty * i.unitAmount)}</span></div>
           {i.voidedAt ? <div className="text-xs text-slate-500">Voided: {i.voidReason}</div>
@@ -75,7 +77,7 @@ export default async function Bill(props: { params: Promise<{ id: string }> }) {
               {canRefund && left > 0 && <RefundButton paymentId={p.id} maxCentavos={left} />}</div></div>);
         })}
         <div className="mt-2 text-sm">{row(upcoming ? "Deposits held" : "Paid", formatPHP(tt.paid - tt.refunded))}{row(upcoming ? "Estimated balance on arrival" : "Balance due", formatPHP(tt.balance), true)}</div></section></div>
-    {open ? <FolioActions reservationId={r.id} folioId={folio.id} balance={t.balance} canOverride={can(user.role, "checkout.override")} />
+    {open ? <FolioActions reservationId={r.id} folioId={folio.id} balance={t.balance}    canOverride={can(user.role, "checkout.override")} canDiscount={can(user.role, "folio.discount")} />
       : upcoming ? <p className="rounded bg-blue-50 p-3 text-sm text-blue-900">This guest hasn't checked in yet. Record more deposits or add a cancellation fee on the <Link href={`/reservations/${r.id}`} className="underline">reservation page</Link>. Room charges and check-out start at check-in.</p>
       : <p className="rounded bg-slate-100 p-3 text-sm text-slate-600">{closedNote}</p>}</div>);
 }
