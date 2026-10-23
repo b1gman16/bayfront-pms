@@ -3,6 +3,7 @@ import { prisma } from "../db";
 import { audit } from "../audit";
 import { AppError, Actor } from "../http";
 import { encrypt } from "../crypto";
+import { normPhone } from "../domain/duplicates";
 
 const opt = (max: number) => z.string().trim().max(max).optional();
 const schema = z.object({
@@ -17,7 +18,8 @@ export async function updateGuest(id: string, raw: unknown, actor: Actor) {
   return prisma.$transaction(async tx => {
     const g = await tx.guest.findUniqueOrThrow({ where: { id } });
     if (d.phone) {
-      const ex = await tx.guest.findFirst({ where: { phone: d.phone, id: { not: id } } });
+      const key = normPhone(d.phone);
+      const ex = key ? (await tx.guest.findMany({ where: { phone: { not: null }, id: { not: id } }, select: { fullName: true, phone: true } })).find(g => normPhone(g.phone) === key) : undefined;
       if (ex) throw new AppError(`Another guest already uses this phone number: ${ex.fullName}.`);
     }
     let idNumberEnc = g.idNumberEnc;

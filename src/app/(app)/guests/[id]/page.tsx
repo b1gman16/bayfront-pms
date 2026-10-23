@@ -33,7 +33,7 @@ export default async function GuestPage(props: { params: Promise<{ id: string }>
 
   const stat = (l: string, v: string | number) => <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm"><div className="text-xs text-slate-500">{l}</div><div className="mt-1 text-xl font-semibold">{v}</div></div>;
   return (<div className="space-y-5">
-    <div><Link href="/guests" className="text-sm text-brand">← All guests</Link><h1 className="mt-1 text-2xl font-semibold">{g.fullName}</h1>
+    <div><Link href="/guests" className="text-sm text-brand">← All guests</Link>{can(user.role, "guest.merge") && <Link href={`/guests/merge?keep=${g.id}`} className="ml-4 text-sm text-brand">Merge a duplicate into this profile</Link>}<h1 className="mt-1 text-2xl font-semibold">{g.fullName}</h1>
       <p className="text-sm text-slate-500">Guest since {g.createdAt.toLocaleDateString("en-PH", { month: "short", year: "numeric", timeZone: "Asia/Manila" })}</p></div>
     <div className="grid grid-cols-2 gap-3 md:grid-cols-4">{stat("Previous stays", past.length)}{stat("Upcoming", upcoming)}{stat("Total spent", formatPHP(total))}{stat("Last stay", d(past[0]?.checkOut))}</div>
     <div className="grid gap-5 lg:grid-cols-5">

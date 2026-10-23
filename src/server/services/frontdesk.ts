@@ -4,6 +4,7 @@ import { audit } from "../audit";
 import { AppError, Actor } from "../http";
 import { isRoomFree } from "../domain/availability";
 import { formatPHP } from "../domain/folio";
+import { normPhone } from "../domain/duplicates";
 
 const manilaToday = () => new Date(new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Manila" }) + "T00:00:00.000Z");
 
@@ -19,7 +20,8 @@ export const searchGuests = (q: string) => prisma.guest.findMany({
 export async function createGuest(raw: unknown, actor: Actor) {
   const d = guestSchema.parse(raw);
   if (d.phone) {                                         // stop duplicate profiles
-    const ex = await prisma.guest.findFirst({ where: { phone: d.phone } });
+    const key = normPhone(d.phone);
+    const ex = key ? (await prisma.guest.findMany({ where: { phone: { not: null } }, select: { fullName: true, phone: true } })).find(g => normPhone(g.phone) === key) : undefined;
     if (ex) throw new AppError(`A guest with this phone number already exists: ${ex.fullName}. Search and select them instead.`);
   }
   return prisma.$transaction(async tx => {

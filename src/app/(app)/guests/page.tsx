@@ -35,7 +35,7 @@ export default async function Guests(props: { searchParams: Promise<{ q?: string
   const stat = (id: string) => stays.find(x => x.guestId === id);
 
   return (<div className="space-y-4">
-    <div className="flex items-center justify-between gap-3"><h1 className="text-2xl font-semibold">Guests</h1>{can(user.role, "guest.edit") && <AddGuest />}</div>
+    <div className="flex items-center justify-between gap-3"><h1 className="text-2xl font-semibold">Guests</h1><div className="flex items-center gap-3">{can(user.role, "guest.merge") && <Link href="/guests/duplicates" className="text-sm text-brand">Find duplicates</Link>}<div className="flex items-center gap-3">{can(user.role, "guest.merge") && <Link href="/guests/duplicates" className="text-sm text-brand">Find duplicates</Link>}<div className="flex items-center gap-3">{can(user.role, "guest.merge") && <Link href="/guests/duplicates" className="text-sm text-brand">Find duplicates</Link>}<div className="flex items-center gap-3">{can(user.role, "guest.merge") && <Link href="/guests/duplicates" className="text-sm text-brand">Find duplicates</Link>}{can(user.role, "guest.edit") && <AddGuest />}</div></div></div></div></div>
     <form method="get" className="flex gap-2"><input name="q" defaultValue={q ?? ""} aria-label="Search guests" placeholder="Search by name, phone or email…"
       className="w-full max-w-md rounded-md border border-slate-300 px-3 py-2 text-sm" /><button className="rounded-md bg-navy-800 px-4 py-2 text-sm text-white">Search</button>
       {q && <Link href="/guests" className="self-center text-sm text-brand">Clear</Link>}</form>

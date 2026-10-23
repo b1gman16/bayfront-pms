@@ -2,11 +2,17 @@ import { prisma } from "@/server/db";
 import { formatPHP } from "@/server/domain/folio";
 import { CalendarDays, UserCheck, LogOut, BedDouble, CheckCircle2, Wallet, ArrowLeftRight, Wrench, AlertCircle } from "lucide-react";
 export const dynamic = "force-dynamic";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/server/auth";
+import { can } from "@/server/domain/permissions";
 
 const fmtTime = (d: Date) => d.toLocaleTimeString("en-PH", { hour: "numeric", minute: "2-digit", timeZone: "Asia/Manila" });
 const card = "rounded-xl border border-slate-200 bg-white p-5 shadow-sm";
 
 export default async function Dashboard() {
+  const user = (await getServerSession(authOptions))?.user as any;
+  const everything = can(user.role, "audit.view");   // managers see every action; others only day-to-day activity
+  const dayToDay = ["checkin", "checkout", "payment.", "reservation.", "housekeeping.", "maintenance."];
   const now = new Date();
   const day = now.toLocaleDateString("en-CA", { timeZone: "Asia/Manila" });
   const today = new Date(day + "T00:00:00.000Z");       // the Manila date, as a date-only value
@@ -18,7 +24,7 @@ export default async function Dashboard() {
     prisma.reservation.count({ where: { status: { in: ["PENDING", "CONFIRMED", "CHECKED_IN"] }, checkIn: { lte: today }, checkOut: { gt: today } } }),
     prisma.room.count({ where: { status: "OCCUPIED" } }),
     prisma.reservation.count({ where: { status: "CHECKED_OUT", checkedOutAt: { gte: since } } }),
-    prisma.auditLog.findMany({ orderBy: { at: "desc" }, take: 5 }),
+    prisma.auditLog.findMany({ where: everything ? {} : { OR: dayToDay.map(p => ({ action: { startsWith: p } })) }, orderBy: { at: "desc" }, take: 5 }),
     prisma.payment.groupBy({ by: ["kind"], where: { at: { gte: since } }, _sum: { amount: true } }),
   ]);
   const n = (...s: string[]) => rooms.filter(r => s.includes(r.status)).reduce((a, r) => a + r._count, 0);

@@ -21,29 +21,34 @@ export async function createReservation(raw: unknown, actor: Actor) {
   const d = createSchema.parse(raw);
   const from = day(d.checkIn), to = day(d.checkOut);
   if (to <= from) throw new AppError("Check-out must be after check-in", 400);
-  try {
-    return await prisma.$transaction(async tx => {
-      const type = await tx.roomType.findUniqueOrThrow({ where: { id: d.roomTypeId } });
-      if (d.adults + d.children > type.maxOccupancy) throw new AppError(`Max ${type.maxOccupancy} guests for ${type.name}`, 400);
-      if (d.roomId) {
-        const room = await tx.room.findUniqueOrThrow({ where: { id: d.roomId } });
-        const stays = await tx.reservation.findMany({ where: { roomId: room.id } });
-        if (!isRoomFree(room, stays, from, to)) throw new AppError(`Room ${room.number} is not available for those dates`);
-      }
-      const q = await quote(tx, d.roomTypeId, from, to);          // the price of every night is saved with the booking
-      const nightly = q.nights.map(n => n.rate);
-      const last = await tx.reservation.aggregate({ _count: true });
-      const code = `BR-${1000 + last._count + 1}`;
-      const r = await tx.reservation.create({ data: { code, guestId: d.guestId, roomTypeId: d.roomTypeId,
-        roomId: d.roomId, checkIn: from, checkOut: to, adults: d.adults, children: d.children, source: d.source,
-        specialRequests: d.specialRequests, ratePerNight: nightly[0], nightly: nightly as unknown as Prisma.InputJsonValue,
-        status: "CONFIRMED", createdById: actor.id } });
-      await audit(tx, actor.id, "reservation.create", "Reservation", r.id, `${actor.name} created ${code}, room total ${formatPHP(q.total)}`, undefined, r);
-      return r;
-    });
-  } catch (e: any) {                       // DB exclusion constraint = last line of defence against races
-    if (String(e?.message).includes("no_double_booking")) throw new AppError("That room was just booked by someone else. Pick another.");
-    throw e;
+  for (let attempt = 1; ; attempt++) {
+    try {
+      return await prisma.$transaction(async tx => {
+        const type = await tx.roomType.findUniqueOrThrow({ where: { id: d.roomTypeId } });
+        if (d.adults + d.children > type.maxOccupancy) throw new AppError(`Max ${type.maxOccupancy} guests for ${type.name}`, 400);
+        if (d.roomId) {
+          const room = await tx.room.findUniqueOrThrow({ where: { id: d.roomId } });
+          const stays = await tx.reservation.findMany({ where: { roomId: room.id } });
+          if (!isRoomFree(room, stays, from, to)) throw new AppError(`Room ${room.number} is not available for those dates`);
+        }
+        const q = await quote(tx, d.roomTypeId, from, to);          // the price of every night is saved with the booking
+        const nightly = q.nights.map(n => n.rate);
+        const last = await tx.reservation.aggregate({ _count: true });
+        const code = `BR-${1000 + last._count + 1}`;
+        const r = await tx.reservation.create({ data: { code, guestId: d.guestId, roomTypeId: d.roomTypeId,
+          roomId: d.roomId, checkIn: from, checkOut: to, adults: d.adults, children: d.children, source: d.source,
+          specialRequests: d.specialRequests, ratePerNight: nightly[0], nightly: nightly as unknown as Prisma.InputJsonValue,
+          status: "CONFIRMED", createdById: actor.id } });
+        await audit(tx, actor.id, "reservation.create", "Reservation", r.id, `${actor.name} created ${code}, room total ${formatPHP(q.total)}`, undefined, r);
+        return r;
+      });
+    } catch (e: any) {
+      // DB exclusion constraint = last line of defence against two people booking the same room.
+      if (String(e?.message).includes("no_double_booking")) throw new AppError("That room was just booked by someone else. Pick another.");
+      // Two staff saving at the same moment can pick the same reservation number: try again with the next one.
+      if (e?.code === "P2002" && attempt < 4) continue;
+      throw e;
+    }
   }
 }
 

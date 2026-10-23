@@ -2,11 +2,11 @@ export type Role = "OWNER" | "MANAGER" | "FRONT_DESK" | "HOUSEKEEPING" | "CASHIE
 
 const FRONT = ["reservation.view","reservation.create","reservation.edit","reservation.cancel",
   "guest.view","guest.edit","checkin","checkout","payment.record","payment.view","room.status","room.view","folio.view","folio.charge",
-  "housekeeping.view","maintenance.report"];
+  "housekeeping.view","housekeeping.update","maintenance.report"];
 
 export const PERMISSIONS: Record<Role, readonly string[]> = {
   OWNER: ["*"],
-  MANAGER: [...FRONT, "payment.refund","folio.void","folio.discount","room.manage","rate.manage","report.view","report.financial",
+  MANAGER: [...FRONT, "payment.refund","folio.void","folio.discount","guest.merge","room.manage","rate.manage","report.view","report.financial",
     "housekeeping.manage","housekeeping.update","maintenance.manage","user.manage","audit.view","checkout.override"],
   FRONT_DESK: FRONT,
   HOUSEKEEPING: ["room.view","room.status.clean","housekeeping.view","housekeeping.update","maintenance.report"],

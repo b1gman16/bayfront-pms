@@ -77,7 +77,7 @@ export default async function Bill(props: { params: Promise<{ id: string }> }) {
               {canRefund && left > 0 && <RefundButton paymentId={p.id} maxCentavos={left} />}</div></div>);
         })}
         <div className="mt-2 text-sm">{row(upcoming ? "Deposits held" : "Paid", formatPHP(tt.paid - tt.refunded))}{row(upcoming ? "Estimated balance on arrival" : "Balance due", formatPHP(tt.balance), true)}</div></section></div>
-    {open ? <FolioActions reservationId={r.id} folioId={folio.id} balance={t.balance}    canOverride={can(user.role, "checkout.override")} canDiscount={can(user.role, "folio.discount")} />
+    {open ? <FolioActions reservationId={r.id} folioId={folio.id} balance={t.balance}    canOverride={can(user.role, "checkout.override")} canDiscount={can(user.role, "folio.discount")} canCheckout={can(user.role, "checkout")} />
       : upcoming ? <p className="rounded bg-blue-50 p-3 text-sm text-blue-900">This guest hasn't checked in yet. Record more deposits or add a cancellation fee on the <Link href={`/reservations/${r.id}`} className="underline">reservation page</Link>. Room charges and check-out start at check-in.</p>
       : <p className="rounded bg-slate-100 p-3 text-sm text-slate-600">{closedNote}</p>}</div>);
 }

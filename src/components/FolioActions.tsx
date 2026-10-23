@@ -6,8 +6,8 @@ import { call, field, btn, uuid } from "./api";
 const METHODS = ["CASH", "GCASH", "MAYA", "CARD", "BANK_TRANSFER", "OTHER"];
 const peso = (c: number) => new Intl.NumberFormat("en-PH", { style: "currency", currency: "PHP" }).format(c / 100);
 
-export default function FolioActions({ reservationId, folioId, balance, canOverride, canDiscount = false }: {
-  reservationId: string; folioId: string; balance: number; canOverride: boolean; canDiscount?: boolean }) {
+export default function FolioActions({ reservationId, folioId, balance, canOverride, canDiscount = false, canCheckout = true }: {
+  reservationId: string; folioId: string; balance: number; canOverride: boolean; canDiscount?: boolean; canCheckout?: boolean }) {
   const router = useRouter(); const key = useRef(uuid());
   const [msg, setMsg] = useState(""); const [err, setErr] = useState(""); const [busy, setBusy] = useState(false);
   async function run(fn: () => Promise<{ ok: boolean; error?: string }>, ok: string) { setBusy(true); setErr(""); setMsg(""); const r = await fn(); setBusy(false); if (r.ok) { setMsg(ok); router.refresh(); } else setErr(r.error ?? "Failed"); }
@@ -50,7 +50,7 @@ export default function FolioActions({ reservationId, folioId, balance, canOverr
       <button disabled={busy} className="rounded-md border border-slate-300 px-3.5 py-2 text-sm hover:bg-slate-50">Add discount</button></form>}
     <div className={`${sec} lg:col-span-2`}>
       {balance > 0 ? <p className="rounded bg-red-50 p-3 text-sm font-medium text-red-700">Unpaid balance: {peso(balance)}. Record payment before checking out.</p> : <p className="rounded bg-emerald-50 p-3 text-sm font-medium text-emerald-700">Fully paid. Ready to check out.</p>}
-      <div className="flex flex-wrap gap-3"><button disabled={busy || balance > 0} onClick={() => out(false)} className={btn}>Check out</button>
-        {balance > 0 && canOverride && <button disabled={busy} onClick={() => out(true)} className="rounded-md border border-red-300 px-3.5 py-2 text-sm text-red-700 hover:bg-red-50">Manager: check out with unpaid balance</button>}</div>
+      <div className="flex flex-wrap gap-3">{canCheckout && <button disabled={busy || balance > 0} onClick={() => out(false)} className={btn}>Check out</button>}
+        {balance > 0 && canOverride && canCheckout && <button disabled={busy} onClick={() => out(true)} className="rounded-md border border-red-300 px-3.5 py-2 text-sm text-red-700 hover:bg-red-50">Manager: check out with unpaid balance</button>}</div>
       {msg && <p role="status" className="text-sm text-emerald-700">{msg}</p>}{err && <p role="alert" className="text-sm text-red-700">{err}</p>}</div></div>);
 }
